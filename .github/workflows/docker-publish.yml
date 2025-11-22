@@ -25,7 +25,7 @@ jobs:
   test-pr:
     name: Test on Pull Request
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.action != 'pull_request.merged'
+    if: github.event_name == 'pull_request' && github.event.action == 'pull_request.merged'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
