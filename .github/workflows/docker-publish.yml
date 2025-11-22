@@ -35,6 +35,7 @@ jobs:
         run: |
           echo "Run your test suite here"
           # e.g. docker-compose run tests or `npm test` or `pytest` …
+          pytest tests/
 
   build-deploy:
     name: Build & Deploy on Merge to Main
