@@ -13,7 +13,7 @@ on:
       - main
 
 env:
-  REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
+  REGISTRY: ${{ secrets.REGISTRY }}
   IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
   DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
