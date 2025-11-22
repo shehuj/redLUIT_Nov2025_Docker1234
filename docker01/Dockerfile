@@ -1,21 +1,13 @@
-# Use a specific Ubuntu version to keep things stable
-FROM ubuntu:22.04
+FROM nginx:alpine
 
-# Avoid interactive prompts during package installation
-ARG DEBIAN_FRONTEND=noninteractive
+# Remove default nginx content
+RUN rm -rf /usr/share/nginx/html/*
 
-# Update packages and install Apache2
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y apache2 && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Copy your website files
+COPY . /usr/share/nginx/html
 
-# Remove default html (optional) and add your custom webpage
-COPY index.html /var/www/html/index.html
-
-# Expose HTTP port
+# Expose port 80
 EXPOSE 80
 
-# Run Apache in foreground so container keeps running
-CMD ["apache2ctl", "-D", "FOREGROUND"]
+# Run Nginx in foreground
+CMD ["nginx", "-g", "daemon off;"]
