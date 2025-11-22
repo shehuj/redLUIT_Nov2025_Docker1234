@@ -1,73 +1,70 @@
-# .yamllint.yaml
-
 extends: default
 
 rules:
   braces:
     level: warning
-    min‑spaces‑inside: 0
-    max‑spaces‑inside: 0
-    min‑spaces‑inside‑empty: 0
-    max‑spaces‑inside‑empty: 5
+    min-spaces-inside: 0
+    max-spaces-inside: 0
+    min-spaces-inside-empty: 0
+    max-spaces-inside-empty: 5
 
   brackets:
     level: warning
-    min‑spaces‑inside: 0
-    max‑spaces‑inside: 0
-    min‑spaces‑inside‑empty: 0
-    max‑spaces‑inside‑empty: 5
+    min-spaces-inside: 0
+    max-spaces-inside: 0
+    min-spaces-inside-empty: 0
+    max-spaces-inside-empty: 5
 
   colons:
     level: warning
-    max‑spaces‑before: 0
-    max‑spaces‑after: 1
+    max-spaces-before: 0
+    max-spaces-after: 1
 
   commas:
     level: warning
-    max‑spaces‑before: 0
-    min‑spaces‑after: 1
-    max‑spaces‑after: 1
+    max-spaces-before: 0
+    min-spaces-after: 1
+    max-spaces-after: 1
 
   comments:
-    # disable comments rule
     level: disable
 
-  comments‑indentation:
+  comments-indentation:
     level: disable
 
-  document‑end:
+  document-end:
     level: disable
 
-  document‑start:
+  document-start:
     level: disable
 
-  empty‑lines:
+  empty-lines:
     level: warning
     max: 2
-    max‑start: 0
-    max‑end: 0
+    max-start: 0
+    max-end: 0
 
   hyphens:
     level: warning
-    max‑spaces‑after: 1
+    max-spaces-after: 1
 
   indentation:
     level: warning
     spaces: consistent
-    indent‑sequences: true
-    check‑multi‑line‑strings: false
+    indent-sequences: true
+    check-multi-line-strings: false
 
-  key‑duplicates:
+  key-duplicates:
     level: enable
 
-  line‑length:
+  line-length:
     level: disable
 
-  new‑line‑at‑end‑of‑file:
+  new-line-at-end-of-file:
     level: disable
 
-  new‑lines:
+  new-lines:
     type: unix
 
-  trailing‑spaces:
+  trailing-spaces:
     level: disable

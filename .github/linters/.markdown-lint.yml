@@ -1,14 +1,12 @@
-# .markdownlint.yaml
-
 default: true
 
-# Customize MD013 (line-length)
+# Line‑length rule (MD013)
 MD013:
   line_length: 9999
   heading_line_length: 100
   code_blocks: false
 
-# Allow inline HTML for specific elements
+# Inline HTML allowed for certain elements (MD033)
 MD033:
   allowed_elements:
     - "details"
@@ -16,6 +14,6 @@ MD033:
     - "br"
     - "small"
 
-# Allow duplicate headings if nested differently
+# Duplicate headings allowed if they are nested differently (MD024)
 MD024:
   allow_different_nesting: true

@@ -3,14 +3,14 @@
 failure-threshold: error
 
 ignored:
-  - DL3003  # use WORKDIR instead of cd
-  - DL3006  # pin image versions if desired
-  - DL3007  # using latest (acceptable in your learning context)
-  - DL3008  # pin versions when installing (apt)
-  - DL3018  # apk add pin versions (if using Alpine)
-  - DL3022  # rule for COPY --from (multi-stage) as you allow it
-  - DL3025  # you permit shell/(JSON) notation for RUN
-  - DL3028  # gem install pin versions
-  - DL3059  # multiple consecutive RUN instructions (you accept)
-  - DL4006  # pipefail requirement
-  - SC2016  # single-quotes in shell script you accept
+  - DL3003  # using `cd` instead of WORKDIR is okay in your context
+  - DL3006  # image version is not pinned
+  - DL3007  # using `latest` is acceptable for this learning project
+  - DL3008  # apt install pin versions isn’t required
+  - DL3018  # apk add pin versions is okay / not relevant if not using Alpine
+  - DL3022  # allow COPY --from (multi-stage builds)
+  - DL3025  # allowing shell-notation in RUN
+  - DL3028  # gem install without version pin
+  - DL3059  # consecutive RUN commands are fine
+  - DL4006  # no need for `pipefail` in your scripts
+  - SC2016  # you’re okay with single-quoted shell‑script fragments
