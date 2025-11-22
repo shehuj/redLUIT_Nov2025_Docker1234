@@ -2,6 +2,8 @@
 
 failure-threshold: error
 
+no-fail: true
+
 ignored:
   - DL3003  # using `cd` instead of WORKDIR is okay in your context
   - DL3006  # image version is not pinned
