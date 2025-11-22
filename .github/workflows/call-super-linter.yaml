@@ -1,24 +1,36 @@
-# .github/workflows/lint.yml
+---
+# template source: https://github.com/bretfisher/super-linter-workflow/blob/main/templates/call-super-linter.yaml
 name: Lint Code Base
 
 on:
+  
   push:
-    branches: [ main ]
+    branches: [main]
+  
   pull_request:
-    branches: [ main ]
 
 jobs:
   call-super-linter:
+
     name: Call Super-Linter
-    runs-on: ubuntu-latest
+    
     permissions:
-      contents: read
-      statuses: write
+      contents: read # clone the repo to lint
+      statuses: write #read/write to repo custom statuses
+
+    ### use Reusable Workflows to call my workflow remotely
+    ### https://docs.github.com/en/actions/learn-github-actions/reusing-workflows
+    ### you can also call workflows from inside the same repo via file path
 
     uses: bretfisher/super-linter-workflow/.github/workflows/reusable-super-linter.yaml@main
+    
+    ### Optional settings examples
+    
     with:
+      ### For a DevOps-focused repository. Prevents some code-language linters from running
+      ### defaults to false
       devops-only: true
-      filter-regex-exclude: ".*compose-sample-3/html/.*,.*dockerfile-sample-5/.*"
-    env:
-      # IMPORTANT: This makes Super-Linter not exit with failure even if it finds errors.
-      DISABLE_ERRORS: "true"
+      
+      ### A regex to exclude files from linting
+      ### defaults to empty
+      filter-regex-exclude: .*compose-sample-3/html/.*,.*dockerfile-sample-5/.*
