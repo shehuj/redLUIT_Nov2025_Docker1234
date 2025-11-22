@@ -9,13 +9,6 @@ on:
       - synchronize
       - reopened
 
-  pull_request:
-    # Also trigger on PR closed so we can detect merges
-    branches:
-      - main
-    types:
-      - closed
-
   push:
     branches:
       - main
