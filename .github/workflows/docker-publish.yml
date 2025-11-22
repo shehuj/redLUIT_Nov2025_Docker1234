@@ -14,7 +14,7 @@ on:
 
 env:
   REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
-  IMAGE_NAME: ${{ secrets.DOCKER_IMAGE_NAME }}
+  IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
   DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
