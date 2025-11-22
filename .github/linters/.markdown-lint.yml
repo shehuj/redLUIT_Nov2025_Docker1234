@@ -1,17 +1,19 @@
-# MD013/line-length - Line length
+default: true
+
+# Line‑length rule (MD013)
 MD013:
-  # Number of characters, default is 80
-  # I'm OK with long lines. All editors now have wordwrap
   line_length: 9999
-  # Number of characters for headings
   heading_line_length: 100
-  # check code blocks?
   code_blocks: false
 
-# MD033/html - Inline HTML
+# Inline HTML allowed for certain elements (MD033)
 MD033:
-  allowed_elements: ["details", "summary", "br", "small"]
+  allowed_elements:
+    - "details"
+    - "summary"
+    - "br"
+    - "small"
 
-# MD024/no-duplicate-heading/no-duplicate-header - Multiple headings with the same content
+# Duplicate headings allowed if they are nested differently (MD024)
 MD024:
   allow_different_nesting: true

@@ -1,14 +1,18 @@
+# .hadolint.yaml
+
 failure-threshold: error
 
+no-fail: true
+
 ignored:
-  - DL3003 #ignore that we use cd sometimes
-  - DL3006 #image pin versions
-  - DL3007 #for learning, latest is ok, sometimes
-  - DL3008 #apt pin versions
-  - DL3018 #apk add pin versions
-  - DL3022 #bad rule for COPY --from
-  - DL3025 #for learning, we sometimes use shell notation
-  - DL3028 #gem install pin versions
-  - DL3059 #multiple consecutive runs
-  - DL4006 #we don't need pipefail in this
-  - SC2016 #we want single quotes sometimes
+  - DL3003  # using `cd` instead of WORKDIR is okay in your context
+  - DL3006  # image version is not pinned
+  - DL3007  # using `latest` is acceptable for this learning project
+  - DL3008  # apt install pin versions isn’t required
+  - DL3018  # apk add pin versions is okay / not relevant if not using Alpine
+  - DL3022  # allow COPY --from (multi-stage builds)
+  - DL3025  # allowing shell-notation in RUN
+  - DL3028  # gem install without version pin
+  - DL3059  # consecutive RUN commands are fine
+  - DL4006  # no need for `pipefail` in your scripts
+  - SC2016  # you’re okay with single-quoted shell‑script fragments

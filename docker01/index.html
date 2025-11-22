@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>atechbroe | Technology Consultancy</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1 class="logo">atechbroe</h1>
+      <nav class="nav">
+        <ul class="nav-list">
+          <li><a href="#services">Services</a></li>
+          <li><a href="#about">About Us</a></li>
+          <li><a href="#team">Team</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+      <button class="nav-toggle" aria-label="Toggle navigation">☰</button>
+      <button class="theme-toggle" aria-label="Toggle theme">🌙</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="container">
+      <h2>Empowering Your Business with Technology</h2>
+      <p>Expert consultancy in Cloud, DevOps, and Software Engineering.</p>
+      <a href="#contact" class="btn-primary">Get in Touch</a>
+    </div>
+  </section>
+
+  <section id="services" class="services container">
+    <h2>Our Services</h2>
+    <div class="service-list">
+      <div class="service-item">
+        <h3>Cloud Architecture</h3>
+        <p>Design scalable, reliable, and secure cloud solutions.</p>
+      </div>
+      <div class="service-item">
+        <h3>DevOps & Automation</h3>
+        <p>Streamline your infrastructure with CI/CD automation.</p>
+      </div>
+      <div class="service-item">
+        <h3>Software Engineering</h3>
+        <p>Build high-quality, maintainable applications.</p>
+      </div>
+      <div class="service-item">
+        <h3>Consulting & Strategy</h3>
+        <p>Strategize technology roadmaps aligned with business goals.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="about" class="about container">
+    <h2>About Us</h2>
+    <p>atechbroe is a technology consultancy focused on delivering modern, scalable, and secure solutions for businesses of all sizes. With a team of experienced architects, engineers, and strategists, we help harness the power of technology to drive growth.</p>
+  </section>
+
+  <section id="team" class="team container">
+    <h2>Our Team</h2>
+    <div class="team-list">
+      <div class="team-member">
+        <img src="https://via.placeholder.com/150" alt="Team Member 1">
+        <h3>Jane Doe</h3>
+        <p>Founder & CTO</p>
+      </div>
+      <div class="team-member">
+        <img src="https://via.placeholder.com/150" alt="Team Member 2">
+        <h3>John Smith</h3>
+        <p>DevOps Lead</p>
+      </div>
+      <div class="team-member">
+        <img src="https://via.placeholder.com/150" alt="Team Member 3">
+        <h3>Alice Johnson</h3>
+        <p>Software Architect</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="contact container">
+    <h2>Contact Us</h2>
+    <form id="contact-form">
+      <div class="form-group">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" required/>
+      </div>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required/>
+      </div>
+      <div class="form-group">
+        <label for="message">Message</label>
+        <textarea id="message" name="message" rows="5" required></textarea>
+      </div>
+      <button type="submit" class="btn-primary">Send Message</button>
+    </form>
+    <div id="form-response" class="form-response"></div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>&copy; <span id="year"></span> atechbroe. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
