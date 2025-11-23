@@ -206,6 +206,34 @@ jobs:
       # ═══════════════════════════════════════════════════════
       # PUBLISH IMAGE TO DOCKER HUB
       # ═══════════════════════════════════════════════════════
+      - name: Create Docker Hub repository if it doesn't exist
+        continue-on-error: true
+        run: |
+          REPO_NAME="${{ env.IMAGE_NAME }}"
+          USERNAME="${{ env.DOCKER_USERNAME }}"
+          
+          echo "Checking if repository ${USERNAME}/${REPO_NAME} exists..."
+          
+          # Try to get repository info
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ env.DOCKER_PASSWORD }}" \
+            "https://hub.docker.com/v2/repositories/${DOCKER_USERNAME}/${REPO_NAME}/")
+          
+          if [ "$RESPONSE" = "404" ]; then
+            echo "Repository doesn't exist. Creating it..."
+            
+            # Create repository
+            curl -X POST \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer ${{ env.DOCKER_PASSWORD }}" \
+              -d "{\"namespace\":\"${USERNAME}\",\"name\":\"${REPO_NAME}\",\"is_private\":false}" \
+              "https://hub.docker.com/v2/repositories/"
+            
+            echo "✅ Repository created successfully"
+          else
+            echo "✅ Repository already exists"
+          fi
+      
       - name: Build and Push Docker image to Docker Hub
         id: build-and-push
         uses: docker/build-push-action@v6
