@@ -44,6 +44,7 @@ jobs:
           pip install -r requirements.txt
           pip install ruff
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi  
+      
       - name: Run tests
         run: |
           echo "Run your test suite here"
@@ -74,7 +75,7 @@ jobs:
           entrypoint: /bin/sh
           args: -c "semgrep ci --suppress-errors --sarif --config auto > semgrep-results.sarif || true"
         env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}  # optional if you’re using a Semgrep token
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}  # optional if you're using a Semgrep token
     
       - name: Upload Semgrep SARIF (even if findings)
         uses: github/codeql-action/upload-sarif@v4
@@ -90,31 +91,32 @@ jobs:
         run: |
           echo "Resolving registry: ${{ env.REGISTRY }}"
           nslookup ${{ env.REGISTRY }} || dig +short ${{ env.REGISTRY }}
-          - name: Debug DNS + fix / retry login
-          run: |
-            echo "Before fix: /etc/resolv.conf:"
-            cat /etc/resolv.conf
-            echo "Resolving registry: ${{ env.REGISTRY }}"
-            nslookup ${{ env.REGISTRY }} || dig +short ${{ env.REGISTRY }}
-        
-            # Override resolv.conf to use public DNS
-            echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
-            echo "nameserver 8.8.4.4" | sudo tee -a /etc/resolv.conf
-        
-            echo "After fix: Resolving registry again: ${{ env.REGISTRY }}"
-            nslookup ${{ env.REGISTRY }} || dig +short ${{ env.REGISTRY }}
-        
-            # Retry docker login
-            retries=3
-            until echo ${{ secrets.DOCKER_PASSWORD }} | docker login ${{ env.REGISTRY }} -u ${{ secrets.DOCKER_USERNAME }} --password‑stdin; do
-              retries=$((retries-1))
-              if [ $retries -le 0 ]; then
-                echo "❌ Failed to login to registry after multiple attempts"
-                exit 1
-              fi
-              echo "⚠️ Login attempt failed; retrying in 5 seconds..."
-              sleep 5
-            done
+
+      - name: Debug DNS + fix / retry login
+        run: |
+          echo "Before fix: /etc/resolv.conf:"
+          cat /etc/resolv.conf
+          echo "Resolving registry: ${{ env.REGISTRY }}"
+          nslookup ${{ env.REGISTRY }} || dig +short ${{ env.REGISTRY }}
+      
+          # Override resolv.conf to use public DNS
+          echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
+          echo "nameserver 8.8.4.4" | sudo tee -a /etc/resolv.conf
+      
+          echo "After fix: Resolving registry again: ${{ env.REGISTRY }}"
+          nslookup ${{ env.REGISTRY }} || dig +short ${{ env.REGISTRY }}
+      
+          # Retry docker login
+          retries=3
+          until echo ${{ secrets.DOCKER_PASSWORD }} | docker login ${{ env.REGISTRY }} -u ${{ secrets.DOCKER_USERNAME }} --password-stdin; do
+            retries=$((retries-1))
+            if [ $retries -le 0 ]; then
+              echo "❌ Failed to login to registry after multiple attempts"
+              exit 1
+            fi
+            echo "⚠️ Login attempt failed; retrying in 5 seconds..."
+            sleep 5
+          done
 
       - name: Extract image metadata (tags + labels)
         id: meta
