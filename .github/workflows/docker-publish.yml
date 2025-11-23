@@ -240,7 +240,7 @@ jobs:
 
       - name: Upload Semgrep results
         if: always()
-        uses: github/codeql-action/upload-sarif@cdcdbb579706841c47f7063dda365e292e5cad7a # v2.13.4
+        uses: github/codeql-action/upload-sarif@e12f0178983d466f2f6028f5cc7a6d786fd97f4b # v4.31.4
         continue-on-error: true
         with:
           sarif_file: semgrep-results.sarif
@@ -262,7 +262,7 @@ jobs:
 
       - name: Upload Trivy results
         if: always()
-        uses: github/codeql-action/upload-sarif@cdcdbb579706841c47f7063dda365e292e5cad7a # v2.13.4
+        uses: github/codeql-action/upload-sarif@e12f0178983d466f2f6028f5cc7a6d786fd97f4b # v4.31.4
         continue-on-error: true
         with:
           sarif_file: trivy-results.sarif
@@ -313,7 +313,7 @@ jobs:
 
       - name: Upload Grype results
         if: always()
-        uses: github/codeql-action/upload-sarif@cdcdbb579706841c47f7063dda365e292e5cad7a # v2.13.4
+        uses: github/codeql-action/upload-sarif@e12f0178983d466f2f6028f5cc7a6d786fd97f4b # v4.31.4
         continue-on-error: true
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
@@ -435,7 +435,7 @@ jobs:
 
       - name: Upload Semgrep results
         if: always()
-        uses: github/codeql-action/upload-sarif@cdcdbb579706841c47f7063dda365e292e5cad7a # v2.13.4
+        uses: github/codeql-action/upload-sarif@e12f0178983d466f2f6028f5cc7a6d786fd97f4b # v4.31.4
         continue-on-error: true
         with:
           sarif_file: semgrep-results.sarif
@@ -555,7 +555,7 @@ jobs:
 
       - name: Upload Trivy production scan
         if: always()
-        uses: github/codeql-action/upload-sarif@cdcdbb579706841c47f7063dda365e292e5cad7a # v2.13.4
+        uses: github/codeql-action/upload-sarif@e12f0178983d466f2f6028f5cc7a6d786fd97f4b # v4.31.4
         continue-on-error: true
         with:
           sarif_file: trivy-production.sarif
