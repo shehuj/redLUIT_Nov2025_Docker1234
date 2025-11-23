@@ -1,4 +1,4 @@
-name: CI / Security / Deploy to EC2
+name: Deploy Docker to EC2
 
 on:
   push:
