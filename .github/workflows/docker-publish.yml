@@ -21,6 +21,7 @@ env:
   IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
   DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  TAGS: ${{ secrets.TAGS }}
 
 jobs:
   test-pr:
@@ -89,14 +90,18 @@ jobs:
         run: |
           echo "Resolving registry: ${{ env.REGISTRY }}"
           nslookup ${{ env.REGISTRY }} || dig +short ${{ env.REGISTRY }}
-
-      - name: Log in to registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ env.DOCKER_USERNAME }}
-          password: ${{ env.DOCKER_PASSWORD }}
-
+      - name: Log in to registry (with retry)
+        run: |
+          retries=3
+          until docker login ${{ env.REGISTRY }} -u ${{ env.DOCKER_USERNAME }} -p ${{ env.DOCKER_PASSWORD }}; do
+            retries=$((retries-1))
+            if [ $retries -le 0 ]; then
+              echo "❌ Failed to login to registry after multiple attempts"
+              exit 1
+            fi
+            echo "⚠️ Login attempt failed; retrying in 5 seconds..."
+            sleep 5
+          done
       - name: Extract image metadata (tags + labels)
         id: meta
         uses: docker/metadata-action@v5
@@ -121,7 +126,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'image'
-          image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}'
+          image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAGS }}'
           format: 'sarif'
           output: 'trivy-image-scan-results.sarif'
           severity: 'CRITICAL,HIGH'
