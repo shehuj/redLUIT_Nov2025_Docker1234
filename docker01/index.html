@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>atechbroe | Technology Consultancy</title>
+  <title>Captain Cloud | Tech & Cloud Computing Blog</title>
   <style>
     /* CSS Reset & Base Styles */
     * {
@@ -13,28 +13,26 @@
     }
 
     :root {
-      --primary-color: #84cc16;
-      --secondary-color: #65a30d;
-      --accent-color: #bef264;
-      --text-color: #1f2937;
+      --primary-color: #0ea5e9;
+      --secondary-color: #0284c7;
+      --accent-color: #38bdf8;
+      --dark-color: #0c4a6e;
+      --text-color: #1e293b;
+      --text-light: #64748b;
       --bg-color: #ffffff;
-      --bg-alt: #f7fee7;
-      --border-color: #d9f99d;
-      --shadow: 0 4px 6px rgba(132, 204, 22, 0.15);
+      --bg-alt: #f8fafc;
+      --border-color: #e2e8f0;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       --transition: all 0.3s ease;
     }
 
     [data-theme="dark"] {
-      --text-color: #f7fee7;
-      --bg-color: #1a2e05;
-      --bg-alt: #2d4a0f;
-      --border-color: #4d7c0f;
+      --text-color: #f1f5f9;
+      --text-light: #94a3b8;
+      --bg-color: #0f172a;
+      --bg-alt: #1e293b;
+      --border-color: #334155;
       --shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
-    }
-
-    [data-theme="dark"] .site-header {
-      background-color: rgba(26, 46, 5, 0.9);
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     }
 
     body {
@@ -53,28 +51,39 @@
 
     /* Header Styles */
     .site-header {
-      background-color: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 2px 10px rgba(132, 204, 22, 0.1);
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      box-shadow: var(--shadow);
       position: sticky;
       top: 0;
       z-index: 1000;
-      transition: var(--transition);
+      padding: 1rem 0;
     }
 
-    .site-header .container {
+    .header-content {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1rem 20px;
-      position: relative;
     }
 
-    .logo {
-      font-size: 1.5rem;
+    .blog-title {
+      font-size: 1.75rem;
       font-weight: bold;
-      color: var(--primary-color);
-      margin: 0;
+      color: white;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .blog-title::before {
+      content: "☁️";
+      font-size: 2rem;
+    }
+
+    .nav {
+      display: flex;
+      gap: 2rem;
+      align-items: center;
     }
 
     .nav-list {
@@ -84,14 +93,14 @@
     }
 
     .nav-list a {
-      color: var(--text-color);
+      color: white;
       text-decoration: none;
       font-weight: 500;
-      transition: color 0.3s ease;
+      transition: opacity 0.3s ease;
     }
 
     .nav-list a:hover {
-      color: var(--primary-color);
+      opacity: 0.8;
     }
 
     .nav-toggle {
@@ -100,328 +109,414 @@
       border: none;
       font-size: 1.5rem;
       cursor: pointer;
-      color: var(--text-color);
+      color: white;
       padding: 0.5rem;
     }
 
     .theme-toggle {
-      background: none;
+      background: rgba(255, 255, 255, 0.2);
       border: none;
       font-size: 1.5rem;
       cursor: pointer;
       padding: 0.5rem;
-      transition: transform 0.3s ease;
+      border-radius: 0.5rem;
+      transition: var(--transition);
     }
 
     .theme-toggle:hover {
-      transform: scale(1.1);
+      background: rgba(255, 255, 255, 0.3);
     }
 
     /* Hero Section */
     .hero {
-      background: linear-gradient(135deg, rgba(132, 204, 22, 0.85), rgba(101, 163, 13, 0.85), rgba(163, 230, 53, 0.75)),
-                  url('hero-background.jpg');
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
-      color: white;
-      padding: 6rem 0;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(2, 132, 199, 0.1));
+      padding: 4rem 0;
       text-align: center;
-      position: relative;
-      overflow: hidden;
+      border-bottom: 1px solid var(--border-color);
     }
 
-    .hero::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      right: -10%;
-      width: 500px;
-      height: 500px;
-      background: radial-gradient(circle, rgba(190, 242, 100, 0.2) 0%, transparent 70%);
-      border-radius: 50%;
-      animation: float 6s ease-in-out infinite;
-    }
-
-    .hero::after {
-      content: '';
-      position: absolute;
-      bottom: -30%;
-      left: -5%;
-      width: 400px;
-      height: 400px;
-      background: radial-gradient(circle, rgba(163, 230, 53, 0.15) 0%, transparent 70%);
-      border-radius: 50%;
-      animation: float 8s ease-in-out infinite reverse;
-    }
-
-    @keyframes float {
-      0%, 100% {
-        transform: translateY(0) translateX(0);
-      }
-      50% {
-        transform: translateY(-20px) translateX(10px);
-      }
-    }
-
-    .hero .container {
-      position: relative;
-      z-index: 1;
-    }
-
-    .hero h2 {
-      font-size: clamp(2rem, 5vw, 3rem);
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
       margin-bottom: 1rem;
-      font-weight: 700;
-      text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+      color: var(--text-color);
     }
 
     .hero p {
-      font-size: clamp(1rem, 2.5vw, 1.25rem);
-      margin-bottom: 2rem;
-      opacity: 0.95;
-      text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.3);
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: var(--text-light);
+      max-width: 600px;
+      margin: 0 auto;
     }
 
-    .btn-primary {
-      display: inline-block;
-      background-color: white;
-      color: var(--primary-color);
-      padding: 0.875rem 2rem;
-      text-decoration: none;
-      border-radius: 0.5rem;
-      font-weight: 600;
+    /* Main Content Layout */
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      gap: 3rem;
+      padding: 3rem 0;
+    }
+
+    /* Blog Posts */
+    .blog-posts {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .blog-post {
+      background-color: var(--bg-alt);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      overflow: hidden;
       transition: var(--transition);
-      border: none;
       cursor: pointer;
-      font-size: 1rem;
     }
 
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 25px rgba(132, 204, 22, 0.4);
-      background-color: #f7fee7;
+    .blog-post:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(14, 165, 233, 0.15);
     }
 
-    /* Section Styles */
-    section {
-      padding: 4rem 0;
+    .post-image {
+      width: 100%;
+      height: 250px;
+      object-fit: cover;
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     }
 
-    section h2 {
-      font-size: clamp(1.75rem, 4vw, 2.5rem);
-      margin-bottom: 2rem;
-      text-align: center;
+    .post-content {
+      padding: 1.5rem;
+    }
+
+    .post-meta {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.875rem;
+      color: var(--text-light);
+      margin-bottom: 0.75rem;
+    }
+
+    .post-category {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .post-title {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
       color: var(--text-color);
     }
 
-    /* Services Section */
-    .services {
-      background-color: var(--bg-alt);
+    .post-excerpt {
+      color: var(--text-light);
+      line-height: 1.6;
+      margin-bottom: 1rem;
     }
 
-    .service-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    .read-more {
+      color: var(--primary-color);
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: gap 0.3s ease;
+    }
+
+    .read-more:hover {
+      gap: 0.75rem;
+    }
+
+    .read-more::after {
+      content: "→";
+    }
+
+    /* Sidebar */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
       gap: 2rem;
-      margin-top: 3rem;
     }
 
-    .service-item {
-      background-color: var(--bg-color);
-      padding: 2rem;
-      border-radius: 0.5rem;
-      box-shadow: var(--shadow);
-      transition: var(--transition);
-      position: relative;
-      overflow: hidden;
+    .sidebar-widget {
+      background-color: var(--bg-alt);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
     }
 
-    .service-item::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      right: -50%;
+    .widget-title {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      color: var(--text-color);
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--primary-color);
+    }
+
+    /* About Widget */
+    .about-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .avatar {
       width: 100px;
       height: 100px;
-      background: radial-gradient(circle, rgba(190, 242, 100, 0.2) 0%, transparent 70%);
       border-radius: 50%;
-      transition: var(--transition);
-    }
-
-    .service-item:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 25px rgba(132, 204, 22, 0.25);
-      border: 2px solid var(--accent-color);
-    }
-
-    .service-item:hover::before {
-      top: -20%;
-      right: -20%;
-      width: 150px;
-      height: 150px;
-    }
-
-    .service-item h3 {
-      color: var(--primary-color);
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
       margin-bottom: 1rem;
-      font-size: 1.25rem;
     }
 
-    .service-item p {
-      color: var(--text-color);
+    .about-text {
+      color: var(--text-light);
       line-height: 1.6;
     }
 
-    /* About Section */
-    .about p {
-      max-width: 800px;
-      margin: 0 auto;
-      font-size: 1.125rem;
-      line-height: 1.8;
-      text-align: center;
+    /* Categories Widget */
+    .category-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
     }
 
-    /* Team Section */
-    .team {
-      background-color: var(--bg-alt);
+    .category-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem;
+      border-radius: 0.375rem;
+      transition: var(--transition);
+      cursor: pointer;
     }
 
-    .team-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 2rem;
-      margin-top: 3rem;
+    .category-item:hover {
+      background-color: rgba(14, 165, 233, 0.1);
     }
 
-    .team-member {
-      text-align: center;
-      background-color: var(--bg-color);
-      padding: 2rem;
-      border-radius: 0.5rem;
-      box-shadow: var(--shadow);
+    .category-count {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 0.125rem 0.5rem;
+      border-radius: 1rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* Recent Posts Widget */
+    .recent-post-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .recent-post-item {
+      display: flex;
+      gap: 1rem;
+      cursor: pointer;
       transition: var(--transition);
     }
 
-    .team-member:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 25px rgba(132, 204, 22, 0.25);
+    .recent-post-item:hover {
+      opacity: 0.8;
     }
 
-    .team-member img {
-      width: 150px;
-      height: 150px;
-      border-radius: 50%;
-      margin-bottom: 1rem;
-      object-fit: cover;
-      transition: var(--transition);
+    .recent-post-thumb {
+      width: 60px;
+      height: 60px;
+      border-radius: 0.375rem;
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      flex-shrink: 0;
     }
 
-    .team-member:hover img {
-      transform: scale(1.05);
-      box-shadow: 0 5px 15px rgba(132, 204, 22, 0.3);
-    }
-
-    .team-member h3 {
-      margin-bottom: 0.5rem;
+    .recent-post-info h4 {
+      font-size: 0.875rem;
+      margin-bottom: 0.25rem;
       color: var(--text-color);
     }
 
-    .team-member p {
-      color: var(--primary-color);
-      font-weight: 500;
+    .recent-post-date {
+      font-size: 0.75rem;
+      color: var(--text-light);
     }
 
-    /* Contact Section */
-    #contact-form {
-      max-width: 600px;
-      margin: 2rem auto;
+    /* Search Widget */
+    .search-form {
+      display: flex;
+      gap: 0.5rem;
     }
 
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 500;
-      color: var(--text-color);
-    }
-
-    .form-group input,
-    .form-group textarea {
-      width: 100%;
+    .search-input {
+      flex: 1;
       padding: 0.75rem;
       border: 2px solid var(--border-color);
-      border-radius: 0.375rem;
-      font-size: 1rem;
+      border-radius: 0.5rem;
       background-color: var(--bg-color);
       color: var(--text-color);
+      font-size: 1rem;
       transition: var(--transition);
     }
 
-    .form-group input:focus,
-    .form-group textarea:focus {
+    .search-input:focus {
       outline: none;
       border-color: var(--primary-color);
     }
 
-    .form-response {
-      margin-top: 1rem;
-      padding: 1rem;
-      border-radius: 0.375rem;
-      text-align: center;
-      font-weight: 500;
+    .search-btn {
+      padding: 0.75rem 1.5rem;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
     }
 
-    .form-response.success {
-      background-color: #d9f99d;
-      color: #365314;
-      border-left: 4px solid var(--primary-color);
+    .search-btn:hover {
+      background-color: var(--secondary-color);
     }
 
-    .form-response.error {
-      background-color: #fee2e2;
-      color: #991b1b;
+    /* Tags Widget */
+    .tags-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .tag {
+      padding: 0.5rem 1rem;
+      background-color: var(--bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: 2rem;
+      font-size: 0.875rem;
+      color: var(--text-color);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .tag:hover {
+      background-color: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 3rem;
+      grid-column: 1 / -1;
+    }
+
+    .page-btn {
+      padding: 0.75rem 1.25rem;
+      background-color: var(--bg-alt);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      color: var(--text-color);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .page-btn:hover,
+    .page-btn.active {
+      background-color: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
     }
 
     /* Footer */
     .site-footer {
       background-color: var(--bg-alt);
+      border-top: 1px solid var(--border-color);
       padding: 2rem 0;
       text-align: center;
-      color: var(--text-color);
-      border-top: 1px solid var(--border-color);
+      margin-top: 4rem;
     }
 
-    /* Mobile Responsive Styles */
+    .footer-content {
+      color: var(--text-light);
+    }
+
+    .social-links {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .social-link {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .social-link:hover {
+      background-color: var(--secondary-color);
+      transform: translateY(-3px);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+      }
+    }
+
     @media (max-width: 768px) {
       .nav {
         position: absolute;
         top: 100%;
         left: 0;
         right: 0;
-        background-color: var(--bg-color);
-        box-shadow: var(--shadow);
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
         max-height: 0;
         overflow: hidden;
         transition: max-height 0.3s ease;
+        flex-direction: column;
+        padding: 0;
       }
 
       .nav.active {
         max-height: 300px;
+        padding: 1rem 0;
       }
 
       .nav-list {
         flex-direction: column;
-        padding: 1rem 0;
         gap: 0;
+        width: 100%;
       }
 
       .nav-list li {
         padding: 0.75rem 20px;
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       }
 
       .nav-list li:last-child {
@@ -432,33 +527,20 @@
         display: block;
       }
 
-      .hero {
-        padding: 4rem 0;
+      .header-content {
+        position: relative;
       }
 
-      section {
+      .sidebar {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
         padding: 3rem 0;
       }
 
-      .service-list,
-      .team-list {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-      }
-
-      .service-item,
-      .team-member {
-        padding: 1.5rem;
-      }
-    }
-
-    @media (min-width: 769px) and (max-width: 1024px) {
-      .service-list {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .team-list {
-        grid-template-columns: repeat(2, 1fr);
+      .main-content {
+        padding: 2rem 0;
       }
     }
 
@@ -468,133 +550,221 @@
     }
 
     /* Accessibility */
-    .nav-toggle:focus,
-    .theme-toggle:focus,
     button:focus,
-    input:focus,
-    textarea:focus {
+    input:focus {
       outline: 2px solid var(--primary-color);
       outline-offset: 2px;
-    }
-
-    /* Animation */
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .service-item,
-    .team-member {
-      animation: fadeIn 0.6s ease-out;
     }
   </style>
 </head>
 <body>
   <header class="site-header">
     <div class="container">
-      <h1 class="logo">atechbroe</h1>
-      <nav class="nav">
-        <ul class="nav-list">
-          <li><a href="#services">Services</a></li>
-          <li><a href="#about">About Us</a></li>
-          <li><a href="#team">Team</a></li>
-          <li><a href="#contact">Contact</a></li>
-        </ul>
-      </nav>
-      <button class="nav-toggle" aria-label="Toggle navigation">☰</button>
-      <button class="theme-toggle" aria-label="Toggle theme">🌙</button>
+      <div class="header-content">
+        <a href="#" class="blog-title">Captain Cloud</a>
+        <nav class="nav">
+          <ul class="nav-list">
+            <li><a href="#home">Home</a></li>
+            <li><a href="#blog">Blog</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+          <button class="theme-toggle" aria-label="Toggle theme">🌙</button>
+        </nav>
+        <button class="nav-toggle" aria-label="Toggle navigation">☰</button>
+      </div>
     </div>
   </header>
 
   <section class="hero">
     <div class="container">
-      <h2>Empowering Your Business with Technology</h2>
-      <p>Expert consultancy in Cloud, DevOps, and Software Engineering.</p>
-      <a href="#contact" class="btn-primary">Get in Touch</a>
+      <h1>Welcome to Captain Cloud</h1>
+      <p>Exploring the world of cloud computing, DevOps, and modern technology</p>
     </div>
   </section>
 
-  <section id="services" class="services container">
-    <h2>Our Services</h2>
-    <div class="service-list">
-      <div class="service-item">
-        <h3>Cloud Architecture</h3>
-        <p>Design scalable, reliable, and secure cloud solutions.</p>
+  <main class="container">
+    <div class="main-content">
+      <div class="blog-posts">
+        <!-- Blog Post 1 -->
+        <article class="blog-post">
+          <div class="post-image"></div>
+          <div class="post-content">
+            <div class="post-meta">
+              <span class="post-category">Cloud</span>
+              <span>December 15, 2024</span>
+            </div>
+            <h2 class="post-title">Getting Started with AWS Lambda</h2>
+            <p class="post-excerpt">
+              Learn how to build serverless applications using AWS Lambda. This comprehensive guide covers everything from basic concepts to advanced deployment strategies.
+            </p>
+            <a href="#" class="read-more">Read More</a>
+          </div>
+        </article>
+
+        <!-- Blog Post 2 -->
+        <article class="blog-post">
+          <div class="post-image"></div>
+          <div class="post-content">
+            <div class="post-meta">
+              <span class="post-category">DevOps</span>
+              <span>December 10, 2024</span>
+            </div>
+            <h2 class="post-title">Kubernetes Best Practices for 2024</h2>
+            <p class="post-excerpt">
+              Discover the latest best practices for managing Kubernetes clusters. From security to scaling, we cover essential strategies for production environments.
+            </p>
+            <a href="#" class="read-more">Read More</a>
+          </div>
+        </article>
+
+        <!-- Blog Post 3 -->
+        <article class="blog-post">
+          <div class="post-image"></div>
+          <div class="post-content">
+            <div class="post-meta">
+              <span class="post-category">Tutorial</span>
+              <span>December 5, 2024</span>
+            </div>
+            <h2 class="post-title">Building CI/CD Pipelines with GitHub Actions</h2>
+            <p class="post-excerpt">
+              Automate your deployment workflow with GitHub Actions. Step-by-step tutorial for creating robust CI/CD pipelines for your projects.
+            </p>
+            <a href="#" class="read-more">Read More</a>
+          </div>
+        </article>
+
+        <!-- Blog Post 4 -->
+        <article class="blog-post">
+          <div class="post-image"></div>
+          <div class="post-content">
+            <div class="post-meta">
+              <span class="post-category">Cloud</span>
+              <span>November 28, 2024</span>
+            </div>
+            <h2 class="post-title">Multi-Cloud Strategy: Pros and Cons</h2>
+            <p class="post-excerpt">
+              Is a multi-cloud approach right for your organization? We analyze the benefits and challenges of using multiple cloud providers.
+            </p>
+            <a href="#" class="read-more">Read More</a>
+          </div>
+        </article>
+
+        <!-- Pagination -->
+        <div class="pagination">
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">3</button>
+          <button class="page-btn">Next</button>
+        </div>
       </div>
-      <div class="service-item">
-        <h3>DevOps & Automation</h3>
-        <p>Streamline your infrastructure with CI/CD automation.</p>
-      </div>
-      <div class="service-item">
-        <h3>Software Engineering</h3>
-        <p>Build high-quality, maintainable applications.</p>
-      </div>
-      <div class="service-item">
-        <h3>Consulting & Strategy</h3>
-        <p>Strategize technology roadmaps aligned with business goals.</p>
-      </div>
+
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <!-- About Widget -->
+        <div class="sidebar-widget">
+          <h3 class="widget-title">About Captain Cloud</h3>
+          <div class="about-content">
+            <div class="avatar">☁️</div>
+            <p class="about-text">
+              Hi! I'm Captain Cloud, sharing insights about cloud computing, DevOps, and cutting-edge technology. Join me on this journey!
+            </p>
+          </div>
+        </div>
+
+        <!-- Search Widget -->
+        <div class="sidebar-widget">
+          <h3 class="widget-title">Search</h3>
+          <form class="search-form">
+            <input type="text" class="search-input" placeholder="Search articles...">
+            <button type="submit" class="search-btn">Go</button>
+          </form>
+        </div>
+
+        <!-- Categories Widget -->
+        <div class="sidebar-widget">
+          <h3 class="widget-title">Categories</h3>
+          <ul class="category-list">
+            <li class="category-item">
+              <span>Cloud Computing</span>
+              <span class="category-count">12</span>
+            </li>
+            <li class="category-item">
+              <span>DevOps</span>
+              <span class="category-count">8</span>
+            </li>
+            <li class="category-item">
+              <span>Tutorials</span>
+              <span class="category-count">15</span>
+            </li>
+            <li class="category-item">
+              <span>Best Practices</span>
+              <span class="category-count">6</span>
+            </li>
+            <li class="category-item">
+              <span>News</span>
+              <span class="category-count">10</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Recent Posts Widget -->
+        <div class="sidebar-widget">
+          <h3 class="widget-title">Recent Posts</h3>
+          <ul class="recent-post-list">
+            <li class="recent-post-item">
+              <div class="recent-post-thumb"></div>
+              <div class="recent-post-info">
+                <h4>Docker vs Kubernetes</h4>
+                <span class="recent-post-date">Dec 12, 2024</span>
+              </div>
+            </li>
+            <li class="recent-post-item">
+              <div class="recent-post-thumb"></div>
+              <div class="recent-post-info">
+                <h4>Azure vs AWS Comparison</h4>
+                <span class="recent-post-date">Dec 8, 2024</span>
+              </div>
+            </li>
+            <li class="recent-post-item">
+              <div class="recent-post-thumb"></div>
+              <div class="recent-post-info">
+                <h4>Infrastructure as Code</h4>
+                <span class="recent-post-date">Dec 3, 2024</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Tags Widget -->
+        <div class="sidebar-widget">
+          <h3 class="widget-title">Popular Tags</h3>
+          <div class="tags-list">
+            <span class="tag">AWS</span>
+            <span class="tag">Azure</span>
+            <span class="tag">Docker</span>
+            <span class="tag">Kubernetes</span>
+            <span class="tag">CI/CD</span>
+            <span class="tag">Serverless</span>
+            <span class="tag">DevOps</span>
+            <span class="tag">Terraform</span>
+          </div>
+        </div>
+      </aside>
     </div>
-  </section>
-
-  <section id="about" class="about container">
-    <h2>About Us</h2>
-    <p>atechbroe is a technology consultancy focused on delivering modern, scalable, and secure solutions for businesses of all sizes. With a team of experienced architects, engineers, and strategists, we help harness the power of technology to drive growth.</p>
-  </section>
-
-  <section id="team" class="team container">
-    <div class="team-list">
-      <div class="team-member">
-        <img src="https://via.placeholder.com/150/84cc16/ffffff?text=Photo" alt="Team Member 1">
-        <h3>Captain Cloud</h3>
-        <p>Founder & CTO</p>
-      </div>
-      <div class="team-member">
-        <img src="https://via.placeholder.com/150/84cc16/ffffff?text=Photo" alt="Team Member 2">
-        <h3>John Smith</h3>
-        <p>DevOps Lead</p>
-      </div>
-      <div class="team-member">
-        <img src="https://via.placeholder.com/150/84cc16/ffffff?text=Photo" alt="Team Member 3">
-        <h3>Alice Johnson</h3>
-        <p>Software Architect</p>
-      </div>
-      <div class="team-member">
-        <img src="https://via.placeholder.com/150/84cc16/ffffff?text=Photo" alt="Team Member 4">
-        <h3>Michael Chen</h3>
-        <p>Cloud Solutions Expert</p>
-      </div>
-    </div>
-  </section>
-
-  <section id="contact" class="contact container">
-    <h2>Contact Us</h2>
-    <form id="contact-form">
-      <div class="form-group">
-        <label for="name">Name</label>
-        <input type="text" id="name" name="name" required/>
-      </div>
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" required/>
-      </div>
-      <div class="form-group">
-        <label for="message">Message</label>
-        <textarea id="message" name="message" rows="5" required></textarea>
-      </div>
-      <button type="submit" class="btn-primary">Send Message</button>
-    </form>
-    <div id="form-response" class="form-response"></div>
-  </section>
+  </main>
 
   <footer class="site-footer">
     <div class="container">
-      <p>&copy; <span id="year"></span> atechbroe. All rights reserved.</p>
+      <div class="footer-content">
+        <p>&copy; <span id="year"></span> Captain Cloud. All rights reserved.</p>
+        <div class="social-links">
+          <a href="#" class="social-link" aria-label="Twitter">𝕏</a>
+          <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+          <a href="#" class="social-link" aria-label="GitHub">GH</a>
+          <a href="#" class="social-link" aria-label="RSS">RSS</a>
+        </div>
+      </div>
     </div>
   </footer>
 
@@ -619,8 +789,8 @@
     const themeToggle = document.querySelector('.theme-toggle');
     const html = document.documentElement;
 
-    // Check for saved theme preference or default to dark mode
-    const currentTheme = localStorage.getItem('theme') || 'dark';
+    // Check for saved theme preference or default to light mode
+    const currentTheme = localStorage.getItem('theme') || 'light';
     html.setAttribute('data-theme', currentTheme);
     themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
 
@@ -633,29 +803,12 @@
       themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
     });
 
-    // Contact Form Handling
-    const contactForm = document.getElementById('contact-form');
-    const formResponse = document.getElementById('form-response');
-
-    contactForm.addEventListener('submit', (e) => {
+    // Search Form
+    const searchForm = document.querySelector('.search-form');
+    searchForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      
-      const formData = new FormData(contactForm);
-      const name = formData.get('name');
-      const email = formData.get('email');
-      const message = formData.get('message');
-
-      // Simulate form submission
-      formResponse.textContent = `Thank you, ${name}! Your message has been received. We'll get back to you at ${email} soon.`;
-      formResponse.className = 'form-response success';
-      
-      contactForm.reset();
-
-      // Hide success message after 5 seconds
-      setTimeout(() => {
-        formResponse.textContent = '';
-        formResponse.className = 'form-response';
-      }, 5000);
+      const searchInput = document.querySelector('.search-input');
+      alert(`Searching for: ${searchInput.value}`);
     });
 
     // Set current year in footer
@@ -666,6 +819,17 @@
       if (!nav.contains(e.target) && !navToggle.contains(e.target)) {
         nav.classList.remove('active');
       }
+    });
+
+    // Pagination buttons
+    const pageButtons = document.querySelectorAll('.page-btn');
+    pageButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        pageButtons.forEach(b => b.classList.remove('active'));
+        if (!btn.textContent.includes('Next') && !btn.textContent.includes('Prev')) {
+          btn.classList.add('active');
+        }
+      });
     });
   </script>
 </body>
