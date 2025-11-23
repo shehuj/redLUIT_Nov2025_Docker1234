@@ -102,11 +102,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha
+          tags: ${{ secrets.TAGS }}
 
       - name: Build Docker image (no push yet)
         id: build-image
@@ -115,7 +111,7 @@ jobs:
           context: ./docker01
           file: ./docker01/Dockerfile
           push: false
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ secrets.TAGS }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
