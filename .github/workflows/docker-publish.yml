@@ -1,19 +1,19 @@
-name: Build, Test & publish Docker Image
+name: Build, Test & Publish Docker Image
 
 on:
   pull_request:
     branches:
       - main
+      - dev
     types:
       - opened
       - synchronize
       - reopened
-      - closed       # <-- include closed so you can detect merges
+      - closed
 
   push:
     branches:
       - main
-      - refs/heads/main
       - dev
     tags:
       - 'v*.*.*'
@@ -26,7 +26,7 @@ env:
 
 jobs:
   test-pr:
-    name: Test on PR
+    name: Test on Pull Request
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.event.action != 'closed'
     steps:
@@ -37,7 +37,7 @@ jobs:
         run: |
           echo "Run your test suite here"
           pytest tests/
-          linting-tool .  # replace with actual linting command
+          linting-tool .  # replace with your lint command
 
   build-deploy:
     name: Build & Deploy on Merge to Main
@@ -45,30 +45,35 @@ jobs:
     if: |
       github.event_name == 'push' ||
       (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true)
+
+    permissions:
+      security-events: write
+      contents: read
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # ──────────────────────────────
-      # Add code scanning here (free SAST)
-      - name: Code Scan (Static Analysis)
-        uses: codacy/codacy-analysis-cli-action@v4.4.7
+      # ─────────── Semgrep Code Scan ───────────  
+      - name: Run Semgrep code scan
+        # Use the official Semgrep Docker image
+        uses: docker://returntocorp/semgrep:latest
         with:
-          output: code-scan-results.sarif
-          format: sarif
-          gh-code-scanning-compat: true
-        # note: you may need to add secrets or configuration depending on Codacy setup
+          entrypoint: /bin/sh
+          args: -c "semgrep ci --sarif --config auto > semgrep-results.sarif"
+        env:
+          # (optional) if you have a token to report to semgrep.dev
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
-      - name: Upload Code Scan SARIF
+      - name: Upload Semgrep SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: code-scan-results.sarif
-          category: 'code-scan'
+          sarif_file: semgrep-results.sarif
+          category: 'semgrep-scan'
 
-      # ──────────────────────────────
-
+      # ─────────── Docker Build / Push Setup ───────────  
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -84,8 +89,6 @@ jobs:
           username: ${{ env.DOCKER_USERNAME }}
           password: ${{ env.DOCKER_PASSWORD }}
 
-      # ──────────────────────────────
-      # Build image but before pushing we scan it
       - name: Extract image metadata (tags + labels)
         id: meta
         uses: docker/metadata-action@v5
@@ -97,7 +100,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha
 
-      - name: Build Docker image
+      - name: Build Docker image (no push yet)
         id: build-image
         uses: docker/build-push-action@v6
         with:
@@ -109,10 +112,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ──────────────────────────────
-      # Image scanning step
+      # ─────────── Trivy Image Scan ───────────  
       - name: Scan Docker image with Trivy
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
           scan-type: 'image'
           image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}'
@@ -124,14 +126,13 @@ jobs:
           TRIVY_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           TRIVY_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Upload Image Scan SARIF
+      - name: Upload Trivy SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-image-scan-results.sarif
           category: 'trivy-image-scan'
 
-      # ──────────────────────────────
-      # Now push the image (after successful scans)
+      # ─────────── Push & Deploy ───────────  
       - name: Push Docker image
         id: build-and-push
         uses: docker/build-push-action@v6
@@ -153,5 +154,10 @@ jobs:
 
       - name: Deploy to EC2
         run: |
-          # Insert your SSH/EC2 deploy commands here
-          echo "Deploying image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}"
+          # (your SSH + deploy commands here)
+          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}
+            docker stop myapp || true
+            docker rm myapp || true
+            docker run -d --name myapp -p 80:80 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}
+          EOF
