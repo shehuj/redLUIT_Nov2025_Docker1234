@@ -1,7 +1,7 @@
 FROM ubuntu:22.04
 
 # Prevent prompts during install
-ARG DEBIAN_FRONTEND=noninteractive
+## ARG DEBIAN_FRONTEND=noninteractive
 
 # Update and install Apache
 RUN apt-get update && \
@@ -13,7 +13,7 @@ RUN apt-get update && \
 COPY index.html /var/www/html/index.html
 
 # Optional: set ownership so Apache can serve correctly
-RUN chown www-data:www-data /var/www/html/index.html
+## RUN chown www-data:www-data /var/www/html/index.html
 
 # Expose HTTP port
 EXPOSE 80
