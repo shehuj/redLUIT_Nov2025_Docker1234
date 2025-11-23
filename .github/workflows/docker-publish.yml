@@ -17,7 +17,7 @@ on:
       - 'v*.*.*'
 
 env:
-  REGISTRY: ${{ secrets.REGISTRY }}
+  REGISTRY: docker.io         # Docker Hub
   IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
   DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
@@ -75,8 +75,8 @@ jobs:
           entrypoint: /bin/sh
           args: -c "semgrep ci --suppress-errors --sarif --config auto > semgrep-results.sarif || true"
         env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}  # optional if you're using a Semgrep token
-    
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
       - name: Upload Semgrep SARIF (even if findings)
         uses: github/codeql-action/upload-sarif@v4
         with:
@@ -92,26 +92,26 @@ jobs:
           echo "Resolving registry: ${{ env.REGISTRY }}"
           nslookup ${{ env.REGISTRY }} || dig +short ${{ env.REGISTRY }}
 
-      - name: Debug DNS + fix / retry login
+      - name: Login to Docker Hub (with DNS fallback + retries)
         run: |
           echo "Before fix: /etc/resolv.conf:"
           cat /etc/resolv.conf
           echo "Resolving registry: ${{ env.REGISTRY }}"
           nslookup ${{ env.REGISTRY }} || dig +short ${{ env.REGISTRY }}
-      
-          # Override resolv.conf to use public DNS
+
+          # Override DNS to use public servers
           echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
           echo "nameserver 8.8.4.4" | sudo tee -a /etc/resolv.conf
-      
+
           echo "After fix: Resolving registry again: ${{ env.REGISTRY }}"
           nslookup ${{ env.REGISTRY }} || dig +short ${{ env.REGISTRY }}
-      
+
           # Retry docker login
           retries=3
-          until echo ${{ secrets.DOCKER_PASSWORD }} | docker login ${{ env.REGISTRY }} -u ${{ secrets.DOCKER_USERNAME }} --password-stdin; do
+          until echo "${{ secrets.DOCKER_PASSWORD }}" | docker login ${{ env.REGISTRY }} -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin; do
             retries=$((retries-1))
             if [ $retries -le 0 ]; then
-              echo "❌ Failed to login to registry after multiple attempts"
+              echo "❌ Failed to login to Docker Hub after multiple attempts"
               exit 1
             fi
             echo "⚠️ Login attempt failed; retrying in 5 seconds..."
@@ -123,7 +123,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: ${{ secrets.TAGS }}
+          tags: ${{ env.TAGS }}
 
       - name: Build Docker image (no push yet)
         id: build-image
@@ -132,7 +132,7 @@ jobs:
           context: ./docker01
           file: ./docker01/Dockerfile
           push: false
-          tags: ${{ secrets.TAGS }}
+          tags: ${{ env.TAGS }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -179,7 +179,6 @@ jobs:
 
       - name: Deploy to EC2
         run: |
-          # (your SSH + deploy commands here)
           ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}
             docker stop myapp || true
