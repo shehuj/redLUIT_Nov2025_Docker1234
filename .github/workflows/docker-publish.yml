@@ -66,14 +66,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      # ─────────── Semgrep Code Scan ───────────  
-      - name: Run Semgrep code scan (non-blocking)
+      # ─────────── Semgrep Code Scan (relaxed) ───────────  
+      - name: Run Semgrep code scan (non‑blocking)
         uses: docker://returntocorp/semgrep:latest
         with:
           entrypoint: /bin/sh
-          args: -c "semgrep ci --suppress-errors --sarif --verbose --config auto > semgrep-results.sarif"
+          args: -c "semgrep ci --suppress-errors --sarif --config auto > semgrep-results.sarif"
         env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}  # optional if you're using a Semgrep token
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}  # optional if you’re using a Semgrep token
     
       - name: Upload Semgrep SARIF (even if findings)
         uses: github/codeql-action/upload-sarif@v4
