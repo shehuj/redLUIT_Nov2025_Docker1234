@@ -1,9 +1,9 @@
-name: Build, Test & Deploy
+name: Build, Test & publish Docker Image
 
 on:
   pull_request:
     branches:
-      - dev
+      - main
     types:
       - opened
       - synchronize
@@ -13,6 +13,8 @@ on:
   push:
     branches:
       - main
+      - refs/heads/main
+      - dev
     tags:
       - 'v*.*.*'
 
@@ -24,7 +26,7 @@ env:
 
 jobs:
   test-pr:
-    name: Test on Pull Request
+    name: Test on PR
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.event.action != 'closed'
     steps:
