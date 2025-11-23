@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Captain Cloud | Tech & Cloud Computing Blog</title>
+  <style>
+    /* CSS Reset & Base Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary-color: #0ea5e9;
+      --secondary-color: #0284c7;
+      --accent-color: #38bdf8;
+      --dark-color: #0c4a6e;
+      --text-color: #1e293b;
+      --text-light: #64748b;
+      --bg-color: #ffffff;
+      --bg-alt: #f8fafc;
+      --border-color: #e2e8f0;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s ease;
+    }
+
+    [data-theme="dark"] {
+      --text-color: #f1f5f9;
+      --text-light: #94a3b8;
+      --bg-color: #0f172a;
+      --bg-alt: #1e293b;
+      --border-color: #334155;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: var(--text-color);
+      background-color: var(--bg-color);
+      transition: var(--transition);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* Header Styles */
+    .site-header {
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      padding: 1rem 0;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .blog-title {
+      font-size: 1.75rem;
+      font-weight: bold;
+      color: white;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .blog-title::before {
+      content: "☁️";
+      font-size: 2rem;
+    }
+
+    .nav {
+      display: flex;
+      gap: 2rem;
+      align-items: center;
+    }
+
+    .nav-list {
+      display: flex;
+      list-style: none;
+      gap: 2rem;
+    }
+
+    .nav-list a {
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+      transition: opacity 0.3s ease;
+    }
+
+    .nav-list a:hover {
+      opacity: 0.8;
+    }
+
+    .nav-toggle {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: white;
+      padding: 0.5rem;
+    }
+
+    .theme-toggle {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      transition: var(--transition);
+    }
+
+    .theme-toggle:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Hero Section */
+    .hero {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(2, 132, 199, 0.1));
+      padding: 4rem 0;
+      text-align: center;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      margin-bottom: 1rem;
+      color: var(--text-color);
+    }
+
+    .hero p {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: var(--text-light);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Main Content Layout */
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      gap: 3rem;
+      padding: 3rem 0;
+    }
+
+    /* Blog Posts */
+    .blog-posts {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .blog-post {
+      background-color: var(--bg-alt);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      overflow: hidden;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .blog-post:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(14, 165, 233, 0.15);
+    }
+
+    .post-image {
+      width: 100%;
+      height: 250px;
+      object-fit: cover;
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    }
+
+    .post-content {
+      padding: 1.5rem;
+    }
+
+    .post-meta {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.875rem;
+      color: var(--text-light);
+      margin-bottom: 0.75rem;
+    }
+
+    .post-category {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .post-title {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+      color: var(--text-color);
+    }
+
+    .post-excerpt {
+      color: var(--text-light);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .read-more {
+      color: var(--primary-color);
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: gap 0.3s ease;
+    }
+
+    .read-more:hover {
+      gap: 0.75rem;
+    }
+
+    .read-more::after {
+      content: "→";
+    }
+
+    /* Sidebar */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .sidebar-widget {
+      background-color: var(--bg-alt);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+    }
+
+    .widget-title {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      color: var(--text-color);
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--primary-color);
+    }
+
+    /* About Widget */
+    .about-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .about-text {
+      color: var(--text-light);
+      line-height: 1.6;
+    }
+
+    /* Categories Widget */
+    .category-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .category-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem;
+      border-radius: 0.375rem;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .category-item:hover {
+      background-color: rgba(14, 165, 233, 0.1);
+    }
+
+    .category-count {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 0.125rem 0.5rem;
+      border-radius: 1rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* Recent Posts Widget */
+    .recent-post-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .recent-post-item {
+      display: flex;
+      gap: 1rem;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .recent-post-item:hover {
+      opacity: 0.8;
+    }
+
+    .recent-post-thumb {
+      width: 60px;
+      height: 60px;
+      border-radius: 0.375rem;
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      flex-shrink: 0;
+    }
+
+    .recent-post-info h4 {
+      font-size: 0.875rem;
+      margin-bottom: 0.25rem;
+      color: var(--text-color);
+    }
+
+    .recent-post-date {
+      font-size: 0.75rem;
+      color: var(--text-light);
+    }
+
+    /* Search Widget */
+    .search-form {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 0.75rem;
+      border: 2px solid var(--border-color);
+      border-radius: 0.5rem;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-size: 1rem;
+      transition: var(--transition);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    .search-btn {
+      padding: 0.75rem 1.5rem;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .search-btn:hover {
+      background-color: var(--secondary-color);
+    }
+
+    /* Tags Widget */
+    .tags-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .tag {
+      padding: 0.5rem 1rem;
+      background-color: var(--bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: 2rem;
+      font-size: 0.875rem;
+      color: var(--text-color);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .tag:hover {
+      background-color: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 3rem;
+      grid-column: 1 / -1;
+    }
+
+    .page-btn {
+      padding: 0.75rem 1.25rem;
+      background-color: var(--bg-alt);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      color: var(--text-color);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .page-btn:hover,
+    .page-btn.active {
+      background-color: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+
+    /* Footer */
+    .site-footer {
+      background-color: var(--bg-alt);
+      border-top: 1px solid var(--border-color);
+      padding: 2rem 0;
+      text-align: center;
+      margin-top: 4rem;
+    }
+
+    .footer-content {
+      color: var(--text-light);
+    }
+
+    .social-links {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .social-link {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .social-link:hover {
+      background-color: var(--secondary-color);
+      transform: translateY(-3px);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .nav {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+        flex-direction: column;
+        padding: 0;
+      }
+
+      .nav.active {
+        max-height: 300px;
+        padding: 1rem 0;
+      }
+
+      .nav-list {
+        flex-direction: column;
+        gap: 0;
+        width: 100%;
+      }
+
+      .nav-list li {
+        padding: 0.75rem 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .nav-list li:last-child {
+        border-bottom: none;
+      }
+
+      .nav-toggle {
+        display: block;
+      }
+
+      .header-content {
+        position: relative;
+      }
+
+      .sidebar {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        padding: 3rem 0;
+      }
+
+      .main-content {
+        padding: 2rem 0;
+      }
+    }
+
+    /* Smooth Scrolling */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* Accessibility */
+    button:focus,
+    input:focus {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <div class="header-content">
+        <a href="#" class="blog-title">Captain Cloud</a>
+        <nav class="nav">
+          <ul class="nav-list">
+            <li><a href="#home">Home</a></li>
+            <li><a href="#blog">Blog</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+          <button class="theme-toggle" aria-label="Toggle theme">🌙</button>
+        </nav>
+        <button class="nav-toggle" aria-label="Toggle navigation">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="container">
+      <h1>Welcome to Captain Cloud</h1>
+      <p>Exploring the world of cloud computing, DevOps, and modern technology</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <div class="main-content">
+      <div class="blog-posts">
+        <!-- Blog Post 1 -->
+        <article class="blog-post">
+          <div class="post-image"></div>
+          <div class="post-content">
+            <div class="post-meta">
+              <span class="post-category">Cloud</span>
+              <span>December 15, 2024</span>
+            </div>
+            <h2 class="post-title">Getting Started with AWS Lambda</h2>
+            <p class="post-excerpt">
+              Learn how to build serverless applications using AWS Lambda. This comprehensive guide covers everything from basic concepts to advanced deployment strategies.
+            </p>
+            <a href="#" class="read-more">Read More</a>
+          </div>
+        </article>
+
+        <!-- Blog Post 2 -->
+        <article class="blog-post">
+          <div class="post-image"></div>
+          <div class="post-content">
+            <div class="post-meta">
+              <span class="post-category">DevOps</span>
+              <span>December 10, 2024</span>
+            </div>
+            <h2 class="post-title">Kubernetes Best Practices for 2024</h2>
+            <p class="post-excerpt">
+              Discover the latest best practices for managing Kubernetes clusters. From security to scaling, we cover essential strategies for production environments.
+            </p>
+            <a href="#" class="read-more">Read More</a>
+          </div>
+        </article>
+
+        <!-- Blog Post 3 -->
+        <article class="blog-post">
+          <div class="post-image"></div>
+          <div class="post-content">
+            <div class="post-meta">
+              <span class="post-category">Tutorial</span>
+              <span>December 5, 2024</span>
+            </div>
+            <h2 class="post-title">Building CI/CD Pipelines with GitHub Actions</h2>
+            <p class="post-excerpt">
+              Automate your deployment workflow with GitHub Actions. Step-by-step tutorial for creating robust CI/CD pipelines for your projects.
+            </p>
+            <a href="#" class="read-more">Read More</a>
+          </div>
+        </article>
+
+        <!-- Blog Post 4 -->
+        <article class="blog-post">
+          <div class="post-image"></div>
+          <div class="post-content">
+            <div class="post-meta">
+              <span class="post-category">Cloud</span>
+              <span>November 28, 2024</span>
+            </div>
+            <h2 class="post-title">Multi-Cloud Strategy: Pros and Cons</h2>
+            <p class="post-excerpt">
+              Is a multi-cloud approach right for your organization? We analyze the benefits and challenges of using multiple cloud providers.
+            </p>
+            <a href="#" class="read-more">Read More</a>
+          </div>
+        </article>
+
+        <!-- Pagination -->
+        <div class="pagination">
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">3</button>
+          <button class="page-btn">Next</button>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <!-- About Widget -->
+        <div class="sidebar-widget">
+          <h3 class="widget-title">About Captain Cloud</h3>
+          <div class="about-content">
+            <div class="avatar">☁️</div>
+            <p class="about-text">
+              Hi! I'm Captain Cloud, sharing insights about cloud computing, DevOps, and cutting-edge technology. Join me on this journey!
+            </p>
+          </div>
+        </div>
+
+        <!-- Search Widget -->
+        <div class="sidebar-widget">
+          <h3 class="widget-title">Search</h3>
+          <form class="search-form">
+            <input type="text" class="search-input" placeholder="Search articles...">
+            <button type="submit" class="search-btn">Go</button>
+          </form>
+        </div>
+
+        <!-- Categories Widget -->
+        <div class="sidebar-widget">
+          <h3 class="widget-title">Categories</h3>
+          <ul class="category-list">
+            <li class="category-item">
+              <span>Cloud Computing</span>
+              <span class="category-count">12</span>
+            </li>
+            <li class="category-item">
+              <span>DevOps</span>
+              <span class="category-count">8</span>
+            </li>
+            <li class="category-item">
+              <span>Tutorials</span>
+              <span class="category-count">15</span>
+            </li>
+            <li class="category-item">
+              <span>Best Practices</span>
+              <span class="category-count">6</span>
+            </li>
+            <li class="category-item">
+              <span>News</span>
+              <span class="category-count">10</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Recent Posts Widget -->
+        <div class="sidebar-widget">
+          <h3 class="widget-title">Recent Posts</h3>
+          <ul class="recent-post-list">
+            <li class="recent-post-item">
+              <div class="recent-post-thumb"></div>
+              <div class="recent-post-info">
+                <h4>Docker vs Kubernetes</h4>
+                <span class="recent-post-date">Dec 12, 2024</span>
+              </div>
+            </li>
+            <li class="recent-post-item">
+              <div class="recent-post-thumb"></div>
+              <div class="recent-post-info">
+                <h4>Azure vs AWS Comparison</h4>
+                <span class="recent-post-date">Dec 8, 2024</span>
+              </div>
+            </li>
+            <li class="recent-post-item">
+              <div class="recent-post-thumb"></div>
+              <div class="recent-post-info">
+                <h4>Infrastructure as Code</h4>
+                <span class="recent-post-date">Dec 3, 2024</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Tags Widget -->
+        <div class="sidebar-widget">
+          <h3 class="widget-title">Popular Tags</h3>
+          <div class="tags-list">
+            <span class="tag">AWS</span>
+            <span class="tag">Azure</span>
+            <span class="tag">Docker</span>
+            <span class="tag">Kubernetes</span>
+            <span class="tag">CI/CD</span>
+            <span class="tag">Serverless</span>
+            <span class="tag">DevOps</span>
+            <span class="tag">Terraform</span>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-content">
+        <p>&copy; <span id="year"></span> Captain Cloud. All rights reserved.</p>
+        <div class="social-links">
+          <a href="#" class="social-link" aria-label="Twitter">𝕏</a>
+          <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+          <a href="#" class="social-link" aria-label="GitHub">GH</a>
+          <a href="#" class="social-link" aria-label="RSS">RSS</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Mobile Navigation Toggle
+    const navToggle = document.querySelector('.nav-toggle');
+    const nav = document.querySelector('.nav');
+    const navLinks = document.querySelectorAll('.nav-list a');
+
+    navToggle.addEventListener('click', () => {
+      nav.classList.toggle('active');
+    });
+
+    // Close mobile menu when clicking on a link
+    navLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        nav.classList.remove('active');
+      });
+    });
+
+    // Theme Toggle
+    const themeToggle = document.querySelector('.theme-toggle');
+    const html = document.documentElement;
+
+    // Check for saved theme preference or default to light mode
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    html.setAttribute('data-theme', currentTheme);
+    themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+    });
+
+    // Search Form
+    const searchForm = document.querySelector('.search-form');
+    searchForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const searchInput = document.querySelector('.search-input');
+      alert(`Searching for: ${searchInput.value}`);
+    });
+
+    // Set current year in footer
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Close mobile menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!nav.contains(e.target) && !navToggle.contains(e.target)) {
+        nav.classList.remove('active');
+      }
+    });
+
+    // Pagination buttons
+    const pageButtons = document.querySelectorAll('.page-btn');
+    pageButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        pageButtons.forEach(b => b.classList.remove('active'));
+        if (!btn.textContent.includes('Next') && !btn.textContent.includes('Prev')) {
+          btn.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
