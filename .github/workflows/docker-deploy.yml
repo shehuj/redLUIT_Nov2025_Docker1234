@@ -3,7 +3,12 @@ name: CI / Security / Deploy to EC2
 on:
   push:
     branches:
-      - main   # or your deploy branch
+      - main
+
+permissions:
+  # Grant the workflow permission to upload SARIF results
+  security-events: write
+  contents: read
 
 jobs:
   scan:
@@ -13,29 +18,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Pull Docker image from Docker Hub
+      - name: Pull Docker image
         run: |
           docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }}
           docker pull captcloud01/myblog:${{ github.sha }}
 
       - name: Run Trivy vulnerability scan
-        uses: aquasecurity/trivy-action@0.28.0   # Use a known stable version
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: 'image'
           image-ref: 'docker.io/captcloud01/myblog:${{ github.sha }}'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
-          exit-code: '1'   # Fail job if vulnerabilities of the above severities exist
+          exit-code: '1'
         env:
           TRIVY_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           TRIVY_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Upload Trivy SARIF report to GitHub Code Scanning
+      - name: Upload Trivy SARIF report
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-results.sarif'
+          category: 'trivy-image-scan'
 
   deploy:
     name: Deploy to EC2
@@ -45,12 +51,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Copy SSH key & set permissions
+      - name: Setup SSH key
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
           chmod 600 key.pem
 
-      - name: SSH into EC2 and deploy Docker container
+      - name: SSH & deploy Docker container
         run: |
           ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             docker pull captcloud01/myblog:${{ github.sha }}
@@ -59,4 +65,4 @@ jobs:
             docker run -d --name myblog \
               -p 80:80 \
               captcloud01/myblog:${{ github.sha }}
-          EOF 
+          EOF

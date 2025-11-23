@@ -3,6 +3,7 @@ name: Build, Test & Deploy
 on:
   pull_request:
     branches:
+      - main
       - dev
     types:
       - opened
@@ -13,6 +14,7 @@ on:
   push:
     branches:
       - main
+      - dev
     tags:
       - 'v*.*.*'
 
@@ -36,6 +38,8 @@ jobs:
         run: |
           echo "Run your test suite here"
           pytest tests/
+          linting-tool . # replace with actual linting command
+          
 
   build-deploy:
     name: Build & Deploy on Merge to Main
