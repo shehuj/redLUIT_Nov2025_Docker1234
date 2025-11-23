@@ -8,6 +8,7 @@ on:
       - opened
       - synchronize
       - reopened
+      - closed       # <-- include closed so you can detect merges
 
   push:
     branches:
@@ -25,6 +26,7 @@ jobs:
   test-pr:
     name: Test on Pull Request
     runs-on: ubuntu-latest
+    # Run for PRs that are not closed (so tests run on open/sync/reopen)
     if: github.event_name == 'pull_request' && github.event.action != 'closed'
     steps:
       - name: Checkout code
@@ -38,6 +40,10 @@ jobs:
   build-deploy:
     name: Build & Deploy on Merge to Main
     runs-on: ubuntu-latest
+    # Only run this job if:
+    # - It's a push to main
+    # OR
+    # - It's a pull_request that has been closed **and** is merged
     if: |
       github.event_name == 'push' ||
       (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true)
