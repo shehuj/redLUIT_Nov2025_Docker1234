@@ -362,3 +362,44 @@ $RECYCLE.BIN/
 # reference pdf's
 references/*.pdf
 references/**/*.pdf
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Documentation
+*.md
+docs/
+LICENSE
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv
+
+# Testing
+.pytest_cache
+.coverage
+htmlcov/
+test-results.xml
+*.log
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
