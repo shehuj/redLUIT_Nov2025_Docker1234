@@ -3,31 +3,33 @@ name: Build, Test & Publish Docker Image
 on:
   pull_request:
     branches:
+      - dev
       - main
     types:
       - opened
       - synchronize
       - reopened
-      - closed
 
   push:
     branches:
-      - dev
       - main
     tags:
       - 'v*.*.*'
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/${{ secrets.IMAGE_NAME }}  # ✅ Full image path
+  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/${{ secrets.IMAGE_NAME }}
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
   DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
 jobs:
-  test-pr:
-    name: Test on Pull Request
+  # ═══════════════════════════════════════════════════════
+  # TEST JOB - Runs on ALL Pull Requests
+  # ═══════════════════════════════════════════════════════
+  test:
+    name: Run Tests
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    if: github.event_name == 'pull_request'
     
     steps:
       - name: Checkout code
@@ -48,19 +50,25 @@ jobs:
         run: |
           echo "Running test suite..."
           pytest tests/ -v
+          
+      - name: Run linting
+        run: |
+          echo "Running code quality checks..."
           ruff check .
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
-  build-publish:
-    name: Build, Scan & Publish Docker Image
+  # ═══════════════════════════════════════════════════════
+  # BUILD & SCAN JOB - Runs on ALL Pull Requests (No Push)
+  # ═══════════════════════════════════════════════════════
+  build-and-scan:
+    name: Build & Security Scan
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'push' ||
-      (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true)
+    needs: test
+    if: github.event_name == 'pull_request'
 
     permissions:
       security-events: write
       contents: read
-      packages: write
 
     steps:
       - name: Checkout code
@@ -68,9 +76,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      # ═══════════════════════════════════════════════════════
-      # CODE SECURITY SCAN - Semgrep
-      # ═══════════════════════════════════════════════════════
+      # ─────────── Semgrep Code Scan ───────────  
       - name: Run Semgrep code scan
         uses: docker://returntocorp/semgrep:latest
         continue-on-error: true
@@ -88,78 +94,21 @@ jobs:
           sarif_file: semgrep-results.sarif
           category: 'semgrep-code-scan'
 
-      # ═══════════════════════════════════════════════════════
-      # DOCKER BUILD SETUP
-      # ═══════════════════════════════════════════════════════
+      # ─────────── Docker Build Setup ───────────  
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # ✅ Verify credentials before login
-      - name: Set up Docker Hub credentials and test
-        run: |
-          echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> $GITHUB_ENV
-          echo "DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }}" >> $GITHUB_ENV
-          echo "IMAGE_NAME=${{ secrets.DOCKER_USERNAME }}/${{ secrets.IMAGE_NAME }}" >> $GITHUB_ENV
-
-          chmod +x ./tests/verify-dockerhub-cred.sh
-          ./tests/verify-dockerhub-cred.sh
-
-      - name: Verify Docker Hub credentials
-        run: |
-          echo "Checking Docker Hub credentials..."
-          echo ${{ env.DOCKER_PASSWORD }} | docker login -u ${{ env.DOCKER_USERNAME }} --password-stdin
-          if [ -z "${{ env.DOCKER_USERNAME }}" ]; then
-            echo "❌ DOCKER_USERNAME secret is not set"
-            exit 1
-          fi
-          if [ -z "${{ env.DOCKER_PASSWORD }}" ]; then
-            echo "❌ DOCKER_PASSWORD secret is not set"
-            exit 1
-          fi
-          if [ -z "${{ env.IMAGE_NAME }}" ]; then
-            echo "❌ IMAGE_NAME secret is not set"
-            exit 1
-          fi
-          echo "✅ All required secrets are set"
-          echo "📦 Full image path will be: ${{ env.IMAGE_NAME }}"
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ env.DOCKER_USERNAME }}
-          password: ${{ env.DOCKER_PASSWORD }}
-
-      # ✅ Verify login was successful
-      - name: Verify Docker Hub login
-        run: |
-          echo "Testing Docker Hub authentication..."
-          docker info | grep Username || echo "⚠️ Username not shown in docker info"
-          echo "✅ Successfully logged in to Docker Hub"
-
-      - name: Extract Docker metadata
+      - name: Extract Docker metadata (for tagging)
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=branch
             type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=pr-{{branch}}-
 
-      # ✅ Show what tags will be created
-      - name: Show image tags
-        run: |
-          echo "The following tags will be created:"
-          echo "${{ steps.meta.outputs.tags }}"
-
-      # ═══════════════════════════════════════════════════════
-      # BUILD IMAGE & LOAD FOR SCANNING
-      # ═══════════════════════════════════════════════════════
-      - name: Build Docker image and load locally
+      # ─────────── Build Image (No Push) ───────────  
+      - name: Build Docker image (validation only)
         id: build-image
         uses: docker/build-push-action@v6
         with:
@@ -172,9 +121,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ═══════════════════════════════════════════════════════
-      # IMAGE SECURITY SCAN - Trivy
-      # ═══════════════════════════════════════════════════════
+      # ─────────── Trivy Image Scan ───────────  
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         continue-on-error: true
@@ -203,37 +150,183 @@ jobs:
           format: 'table'
           severity: 'CRITICAL,HIGH'
 
-      # ═══════════════════════════════════════════════════════
-      # PUBLISH IMAGE TO DOCKER HUB
-      # ═══════════════════════════════════════════════════════
-      - name: Create Docker Hub repository if it doesn't exist
-        continue-on-error: true
+      # ─────────── PR Summary ───────────  
+      - name: Generate PR summary
         run: |
-          REPO_NAME="${{ env.IMAGE_NAME }}"
-          USERNAME="${{ env.DOCKER_USERNAME }}"
-          
-          echo "Checking if repository ${USERNAME}/${REPO_NAME} exists..."
-          
-          # Try to get repository info
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer ${{ env.DOCKER_PASSWORD }}" \
-            "https://hub.docker.com/v2/repositories/${DOCKER_USERNAME}/${REPO_NAME}/")
-          
-          if [ "$RESPONSE" = "404" ]; then
-            echo "Repository doesn't exist. Creating it..."
-            
-            # Create repository
-            curl -X POST \
-              -H "Content-Type: application/json" \
-              -H "Authorization: Bearer ${{ env.DOCKER_PASSWORD }}" \
-              -d "{\"namespace\":\"${USERNAME}\",\"name\":\"${REPO_NAME}\",\"is_private\":false}" \
-              "https://hub.docker.com/v2/repositories/"
-            
-            echo "✅ Repository created successfully"
-          else
-            echo "✅ Repository already exists"
-          fi
+          echo "## ✅ Build & Security Scan Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔍 Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Tests passed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Docker image built successfully" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Semgrep code scan completed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Trivy vulnerability scan completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Image Built (Not Published)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tags:** \`${{ steps.meta.outputs.tags }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image will be published after merge to main**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "Check the [Security tab](/${{ github.repository }}/security/code-scanning) for detailed vulnerability reports." >> $GITHUB_STEP_SUMMARY
+
+  # ═══════════════════════════════════════════════════════
+  # PUBLISH JOB - Only Runs on Merge to Main
+  # ═══════════════════════════════════════════════════════
+  publish:
+    name: Publish Docker Image
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    permissions:
+      security-events: write
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ─────────── Run Tests Again Before Publishing ───────────  
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       
+      - name: Install dependencies and run tests
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          python -m pip install flake8 pytest ruff
+          
+          echo "Running tests before publishing..."
+          pytest tests/ -v
+          ruff check .
+
+      # ─────────── Semgrep Code Scan ───────────  
+      - name: Run Semgrep code scan
+        uses: docker://returntocorp/semgrep:latest
+        continue-on-error: true
+        with:
+          entrypoint: /bin/sh
+          args: -c "semgrep ci --suppress-errors --sarif --config auto > semgrep-results.sarif || true"
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: Upload Semgrep results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        continue-on-error: true
+        with:
+          sarif_file: semgrep-results.sarif
+          category: 'semgrep-code-scan'
+
+      # ─────────── Docker Build Setup ───────────  
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Verify Docker Hub authentication
+        run: |
+          echo "✅ Successfully authenticated with Docker Hub"
+          echo "📦 Target repository: ${{ env.IMAGE_NAME }}"
+
+      # ─────────── Check Repository Exists ───────────  
+      - name: Verify Docker Hub repository exists
+        run: |
+          USERNAME="${{ secrets.DOCKER_USERNAME }}"
+          REPO_NAME="${{ secrets.IMAGE_NAME }}"
+          FULL_REPO="${USERNAME}/${REPO_NAME}"
+          
+          echo "Checking if repository ${FULL_REPO} exists..."
+          
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://hub.docker.com/v2/repositories/${FULL_REPO}/")
+          
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Repository exists: https://hub.docker.com/r/${FULL_REPO}"
+          elif [ "$HTTP_CODE" = "404" ]; then
+            echo "❌ ERROR: Repository does not exist!"
+            echo ""
+            echo "Please create the repository manually:"
+            echo "1. Go to: https://hub.docker.com/repository/create"
+            echo "2. Repository Name: ${REPO_NAME}"
+            echo "3. Visibility: Public"
+            echo "4. Click 'Create'"
+            echo ""
+            exit 1
+          else
+            echo "⚠️ Could not verify repository (HTTP ${HTTP_CODE}), proceeding anyway..."
+          fi
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Show tags to be published
+        run: |
+          echo "=== Tags to Publish to Docker Hub ==="
+          echo "${{ steps.meta.outputs.tags }}"
+          echo "====================================="
+
+      # ─────────── Build & Load for Scanning ───────────  
+      - name: Build Docker image and load locally
+        id: build-image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./docker01
+          file: ./docker01/Dockerfile
+          push: false
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ─────────── Trivy Image Scan ───────────  
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        continue-on-error: true
+        with:
+          scan-type: 'image'
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        continue-on-error: true
+        with:
+          sarif_file: trivy-results.sarif
+          category: 'trivy-image-scan'
+
+      - name: Run Trivy vulnerability scanner (Table Output)
+        uses: aquasecurity/trivy-action@master
+        continue-on-error: true
+        with:
+          scan-type: 'image'
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+
+      # ─────────── Push to Docker Hub ───────────  
       - name: Build and Push Docker image to Docker Hub
         id: build-and-push
         uses: docker/build-push-action@v6
@@ -245,18 +338,16 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64  # ✅ Single platform for faster builds
-          
-      # ═══════════════════════════════════════════════════════
-      # BUILD SUMMARY
-      # ═══════════════════════════════════════════════════════
-      - name: Generate build summary
+          platforms: linux/amd64
+
+      # ─────────── Success Summary ───────────  
+      - name: Generate publish summary
         run: |
           echo "## 🚀 Docker Image Published Successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 Image Details" >> $GITHUB_STEP_SUMMARY
-          echo "- **Registry:** Docker Hub" >> $GITHUB_STEP_SUMMARY
-          echo "- **Repository:** ${{ env.IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Registry:** Docker Hub (docker.io)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Repository:** [${{ env.IMAGE_NAME }}](https://hub.docker.com/r/${{ env.IMAGE_NAME }})" >> $GITHUB_STEP_SUMMARY
           echo "- **Digest:** \`${{ steps.build-and-push.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🏷️ Tags Published" >> $GITHUB_STEP_SUMMARY
@@ -269,10 +360,11 @@ jobs:
           echo "docker pull ${{ fromJSON(steps.meta.outputs.json).tags[0] }}" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📊 Security Scans" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Quality Checks" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ All tests passed" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Semgrep code scan completed" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Trivy image scan completed" >> $GITHUB_STEP_SUMMARY
-          echo "- 📋 Check the [Security tab](/${{ github.repository }}/security/code-scanning) for detailed results" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Trivy vulnerability scan completed" >> $GITHUB_STEP_SUMMARY
+          echo "- 📋 [View Security Reports](/${{ github.repository }}/security/code-scanning)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🤝 Thanks for using our CI/CD pipeline!" >> $GITHUB_STEP_SUMMARY
-          echo "We appreciate your support and contributions." >> $GITHUB_STEP_SUMMARY
+          echo "### ✨ Deployment Ready!" >> $GITHUB_STEP_SUMMARY
+          echo "Your Docker image is now available on Docker Hub and ready to deploy." >> $GITHUB_STEP_SUMMARY
