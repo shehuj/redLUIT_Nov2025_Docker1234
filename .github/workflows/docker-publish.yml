@@ -71,7 +71,7 @@ jobs:
         uses: docker://returntocorp/semgrep:latest
         with:
           entrypoint: /bin/sh
-          args: -c "semgrep ci --suppress-errors --sarif --config auto > semgrep-results.sarif" || true
+          args: -c "semgrep ci --suppress-errors --sarif --config auto > semgrep-results.sarif || true"
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}  # optional if you’re using a Semgrep token
     
