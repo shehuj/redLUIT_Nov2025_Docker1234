@@ -96,6 +96,7 @@ jobs:
       - name: Verify Docker Hub credentials
         run: |
           echo "Checking Docker Hub credentials..."
+          echo "YOUR_ACCESS_TOKEN" | docker login -u YOUR_USERNAME --password-stdin
           if [ -z "${{ secrets.DOCKER_USERNAME }}" ]; then
             echo "❌ DOCKER_USERNAME secret is not set"
             exit 1
