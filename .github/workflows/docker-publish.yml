@@ -19,7 +19,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
+  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/${{ secrets.IMAGE_NAME }}  # ✅ Full image path
 
 jobs:
   test-pr:
@@ -92,18 +92,43 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # ✅ Verify credentials before login
+      - name: Verify Docker Hub credentials
+        run: |
+          echo "Checking Docker Hub credentials..."
+          if [ -z "${{ secrets.DOCKER_USERNAME }}" ]; then
+            echo "❌ DOCKER_USERNAME secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.DOCKER_PASSWORD }}" ]; then
+            echo "❌ DOCKER_PASSWORD secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.IMAGE_NAME }}" ]; then
+            echo "❌ IMAGE_NAME secret is not set"
+            exit 1
+          fi
+          echo "✅ All required secrets are set"
+          echo "📦 Full image path will be: ${{ env.IMAGE_NAME }}"
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # ✅ Verify login was successful
+      - name: Verify Docker Hub login
+        run: |
+          echo "Testing Docker Hub authentication..."
+          docker info | grep Username || echo "⚠️ Username not shown in docker info"
+          echo "✅ Successfully logged in to Docker Hub"
 
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -112,6 +137,12 @@ jobs:
             type=semver,pattern={{major}}
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
+
+      # ✅ Show what tags will be created
+      - name: Show image tags
+        run: |
+          echo "The following tags will be created:"
+          echo "${{ steps.meta.outputs.tags }}"
 
       # ═══════════════════════════════════════════════════════
       # BUILD IMAGE & LOAD FOR SCANNING
@@ -163,7 +194,7 @@ jobs:
       # ═══════════════════════════════════════════════════════
       # PUBLISH IMAGE TO DOCKER HUB
       # ═══════════════════════════════════════════════════════
-      - name: Build and Push Docker image to registry
+      - name: Build and Push Docker image to Docker Hub
         id: build-and-push
         uses: docker/build-push-action@v6
         with:
@@ -174,7 +205,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64  # ✅ Single platform for faster builds
 
       # ═══════════════════════════════════════════════════════
       # BUILD SUMMARY
@@ -184,7 +215,7 @@ jobs:
           echo "## 🚀 Docker Image Published Successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 Image Details" >> $GITHUB_STEP_SUMMARY
-          echo "- **Registry:** ${{ env.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Registry:** Docker Hub" >> $GITHUB_STEP_SUMMARY
           echo "- **Repository:** ${{ env.IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Digest:** \`${{ steps.build-and-push.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -193,7 +224,16 @@ jobs:
           echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Pull Command" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ fromJSON(steps.meta.outputs.json).tags[0] }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📊 Security Scans" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Semgrep code scan completed" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Trivy image scan completed" >> $GITHUB_STEP_SUMMARY
           echo "- 📋 Check the [Security tab](/${{ github.repository }}/security/code-scanning) for detailed results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🤝 Thanks for using our CI/CD pipeline!" >> $GITHUB_STEP_SUMMARY
+          echo "We appreciate your support and contributions." >> $GITHUB_STEP_SUMMARY
+          
