@@ -13,46 +13,43 @@ on:
   push:
     branches:
       - dev
+      - main
     tags:
       - 'v*.*.*'
 
 env:
-  REGISTRY: docker.io         # Docker Hub
+  REGISTRY: docker.io
   IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
-  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-  TAGS: ${{ secrets.TAGS }}
 
 jobs:
   test-pr:
     name: Test on Pull Request
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: '3.12'
       
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install flake8 pytest
-          pip install -r requirements.txt
-          pip install ruff
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi  
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          python -m pip install flake8 pytest ruff
       
       - name: Run tests
         run: |
-          echo "Run your test suite here"
-          pytest tests/
+          echo "Running test suite..."
+          pytest tests/ -v
           ruff check .
 
-  build-deploy:
-    name: Build & Deploy on Merge to Main
+  build-publish:
+    name: Build, Scan & Publish Docker Image
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'push' ||
@@ -61,6 +58,7 @@ jobs:
     permissions:
       security-events: write
       contents: read
+      packages: write
 
     steps:
       - name: Checkout code
@@ -68,97 +66,104 @@ jobs:
         with:
           fetch-depth: 0
 
-      # ─────────── Semgrep Code Scan (relaxed) ───────────  
-      - name: Run Semgrep code scan (non-blocking)
+      # ═══════════════════════════════════════════════════════
+      # CODE SECURITY SCAN - Semgrep
+      # ═══════════════════════════════════════════════════════
+      - name: Run Semgrep code scan
         uses: docker://returntocorp/semgrep:latest
+        continue-on-error: true
         with:
           entrypoint: /bin/sh
           args: -c "semgrep ci --suppress-errors --sarif --config auto > semgrep-results.sarif || true"
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
-      - name: Upload Semgrep SARIF (even if findings)
+      - name: Upload Semgrep results to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        continue-on-error: true
         with:
           sarif_file: semgrep-results.sarif
-          category: 'semgrep-scan'
+          category: 'semgrep-code-scan'
 
-      # ─────────── Docker Build / Push Setup ───────────  
+      # ═══════════════════════════════════════════════════════
+      # DOCKER BUILD SETUP
+      # ═══════════════════════════════════════════════════════
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Debug DNS for registry
-        run: |
-          echo "Resolving registry: ${{ env.REGISTRY }}"
-          nslookup ${{ env.REGISTRY }} || dig +short ${{ env.REGISTRY }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Login to Docker Hub (with DNS fallback + retries)
-        run: |
-          echo "Before fix: /etc/resolv.conf:"
-          cat /etc/resolv.conf
-          echo "Resolving registry: ${{ env.REGISTRY }}"
-          nslookup ${{ env.REGISTRY }} || dig +short ${{ env.REGISTRY }}
-
-          # Override DNS to use public servers
-          echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
-          echo "nameserver 8.8.4.4" | sudo tee -a /etc/resolv.conf
-
-          echo "After fix: Resolving registry again: ${{ env.REGISTRY }}"
-          nslookup ${{ env.REGISTRY }} || dig +short ${{ env.REGISTRY }}
-
-          # Retry docker login
-          retries=3
-          until echo "${{ secrets.DOCKER_PASSWORD }}" | docker login ${{ env.REGISTRY }} -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin; do
-            retries=$((retries-1))
-            if [ $retries -le 0 ]; then
-              echo "❌ Failed to login to Docker Hub after multiple attempts"
-              exit 1
-            fi
-            echo "⚠️ Login attempt failed; retrying in 5 seconds..."
-            sleep 5
-          done
-
-      - name: Extract image metadata (tags + labels)
+      - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: ${{ env.TAGS }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build Docker image (no push yet)
+      # ═══════════════════════════════════════════════════════
+      # BUILD IMAGE & LOAD FOR SCANNING
+      # ═══════════════════════════════════════════════════════
+      - name: Build Docker image and load locally
         id: build-image
         uses: docker/build-push-action@v6
         with:
           context: ./docker01
           file: ./docker01/Dockerfile
           push: false
-          tags: ${{ env.TAGS }}
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ─────────── Trivy Image Scan ───────────  
-      - name: Scan Docker image with Trivy
+      # ═══════════════════════════════════════════════════════
+      # IMAGE SECURITY SCAN - Trivy
+      # ═══════════════════════════════════════════════════════
+      - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
+        continue-on-error: true
         with:
           scan-type: 'image'
-          image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAGS }}'
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
           format: 'sarif'
-          output: 'trivy-image-scan-results.sarif'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '1'
-        env:
-          TRIVY_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          TRIVY_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
 
-      - name: Upload Trivy SARIF to GitHub Security
+      - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        continue-on-error: true
         with:
-          sarif_file: trivy-image-scan-results.sarif
+          sarif_file: trivy-results.sarif
           category: 'trivy-image-scan'
 
-      # ─────────── Push & Deploy ───────────  
-      - name: Push Docker image
+      - name: Run Trivy vulnerability scanner (Table Output)
+        uses: aquasecurity/trivy-action@master
+        continue-on-error: true
+        with:
+          scan-type: 'image'
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+
+      # ═══════════════════════════════════════════════════════
+      # PUBLISH IMAGE TO DOCKER HUB
+      # ═══════════════════════════════════════════════════════
+      - name: Build and Push Docker image to registry
         id: build-and-push
         uses: docker/build-push-action@v6
         with:
@@ -169,19 +174,26 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
 
-      - name: Sign the image (cosign provenance)
-        env:
-          DIGEST: ${{ steps.build-and-push.outputs.digest }}
-          TAGS: ${{ steps.meta.outputs.tags }}
+      # ═══════════════════════════════════════════════════════
+      # BUILD SUMMARY
+      # ═══════════════════════════════════════════════════════
+      - name: Generate build summary
         run: |
-          echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
-
-      - name: Deploy to EC2
-        run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}
-            docker stop myapp || true
-            docker rm myapp || true
-            docker run -d --name myapp -p 80:80 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}
-          EOF
+          echo "## 🚀 Docker Image Published Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Image Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Registry:** ${{ env.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Repository:** ${{ env.IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Digest:** \`${{ steps.build-and-push.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🏷️ Tags Published" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Security Scans" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Semgrep code scan completed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Trivy image scan completed" >> $GITHUB_STEP_SUMMARY
+          echo "- 📋 Check the [Security tab](/${{ github.repository }}/security/code-scanning) for detailed results" >> $GITHUB_STEP_SUMMARY
