@@ -1,13 +1,22 @@
-FROM nginx:alpine
+FROM ubuntu:22.04
 
-# Remove default nginx content
-RUN rm -rf /usr/share/nginx/html/*
+# Prevent prompts during install
+ARG DEBIAN_FRONTEND=noninteractive
 
-# Copy your website files
-COPY . /usr/share/nginx/html
+# Update and install Apache
+RUN apt-get update && \
+    apt-get install -y apache2 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# Expose port 80
+# Copy custom webpage
+COPY index.html /var/www/html/index.html
+
+# Optional: set ownership so Apache can serve correctly
+RUN chown www-data:www-data /var/www/html/index.html
+
+# Expose HTTP port
 EXPOSE 80
 
-# Run Nginx in foreground
-CMD ["nginx", "-g", "daemon off;"]
+# Run Apache in foreground
+CMD ["apache2ctl", "-D", "FOREGROUND"]
