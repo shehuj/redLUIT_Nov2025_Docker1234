@@ -47,7 +47,7 @@ jobs:
         run: |
           echo "Run your test suite here"
           pytest tests/
-          linting-tool .  # replace with your lint command
+          ruff check .
 
   build-deploy:
     name: Build & Deploy on Merge to Main
@@ -67,11 +67,11 @@ jobs:
           fetch-depth: 0
 
       # ─────────── Semgrep Code Scan (relaxed) ───────────  
-      - name: Run Semgrep code scan (non‑blocking)
+      - name: Run Semgrep code scan (non-blocking)
         uses: docker://returntocorp/semgrep:latest
         with:
           entrypoint: /bin/sh
-          args: -c "semgrep ci --suppress-errors --sarif --config auto > semgrep-results.sarif"
+          args: -c "semgrep ci --suppress-errors --sarif --config auto > semgrep-results.sarif" || true
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}  # optional if you’re using a Semgrep token
     
