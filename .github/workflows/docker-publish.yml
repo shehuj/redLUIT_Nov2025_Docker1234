@@ -20,6 +20,8 @@ on:
 env:
   REGISTRY: docker.io
   IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/${{ secrets.IMAGE_NAME }}  # ✅ Full image path
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
 jobs:
   test-pr:
@@ -96,7 +98,7 @@ jobs:
       - name: Verify Docker Hub credentials
         run: |
           echo "Checking Docker Hub credentials..."
-          echo "YOUR_ACCESS_TOKEN" | docker login -u YOUR_USERNAME --password-stdin
+          echo ${{ env.DOCKER_PASSWORD }} | docker login -u ${{ env.DOCKER_USERNAME }} --password-stdin
           if [ -z "${{ secrets.DOCKER_USERNAME }}" ]; then
             echo "❌ DOCKER_USERNAME secret is not set"
             exit 1
