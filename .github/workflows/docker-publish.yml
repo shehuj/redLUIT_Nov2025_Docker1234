@@ -90,18 +90,32 @@ jobs:
         run: |
           echo "Resolving registry: ${{ env.REGISTRY }}"
           nslookup ${{ env.REGISTRY }} || dig +short ${{ env.REGISTRY }}
-      - name: Log in to registry (with retry)
-        run: |
-          retries=3
-          until docker login ${{ env.REGISTRY }} -u ${{ env.DOCKER_USERNAME }} -p ${{ env.DOCKER_PASSWORD }}; do
-            retries=$((retries-1))
-            if [ $retries -le 0 ]; then
-              echo "❌ Failed to login to registry after multiple attempts"
-              exit 1
-            fi
-            echo "⚠️ Login attempt failed; retrying in 5 seconds..."
-            sleep 5
-          done
+          - name: Debug DNS + fix / retry login
+          run: |
+            echo "Before fix: /etc/resolv.conf:"
+            cat /etc/resolv.conf
+            echo "Resolving registry: ${{ env.REGISTRY }}"
+            nslookup ${{ env.REGISTRY }} || dig +short ${{ env.REGISTRY }}
+        
+            # Override resolv.conf to use public DNS
+            echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
+            echo "nameserver 8.8.4.4" | sudo tee -a /etc/resolv.conf
+        
+            echo "After fix: Resolving registry again: ${{ env.REGISTRY }}"
+            nslookup ${{ env.REGISTRY }} || dig +short ${{ env.REGISTRY }}
+        
+            # Retry docker login
+            retries=3
+            until echo ${{ secrets.DOCKER_PASSWORD }} | docker login ${{ env.REGISTRY }} -u ${{ secrets.DOCKER_USERNAME }} --password‑stdin; do
+              retries=$((retries-1))
+              if [ $retries -le 0 ]; then
+                echo "❌ Failed to login to registry after multiple attempts"
+                exit 1
+              fi
+              echo "⚠️ Login attempt failed; retrying in 5 seconds..."
+              sleep 5
+            done
+
       - name: Extract image metadata (tags + labels)
         id: meta
         uses: docker/metadata-action@v5
