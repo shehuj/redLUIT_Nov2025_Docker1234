@@ -303,7 +303,7 @@ jobs:
 
       # ─────────── Grype Vulnerability Scan (Alternative) ───────────
       - name: Run Grype vulnerability scanner
-        uses: anchore/scan-action@3343887d815d7b07465f6fdcd395bd66508d486a # v3.6.4
+        uses: anchore/scan-action@3aaf50d765cfcceafa51d322ccb790e40f6cd8c5 # v7.2.0
         continue-on-error: true
         with:
           image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
