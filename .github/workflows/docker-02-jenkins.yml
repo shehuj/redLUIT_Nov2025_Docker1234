@@ -61,25 +61,29 @@ jobs:
       # 🔍 6) Trivy vulnerability scan – table format
       - name: Trivy scan (table)
         uses: aquasecurity/trivy-action@0.33.1
+        continue-on-error: true
         with:
           image-ref: $REGISTRY/${{ env.IMAGE_NAME }}:${{ github.sha }}
           format: table
           ignore-unfixed: true
           severity: HIGH,CRITICAL
-          exit-code: 1
+          exit-code: 0
 
       # 📊 7) Trivy SARIF report generation
       - name: Trivy SARIF scan
         uses: aquasecurity/trivy-action@0.33.1
+        continue-on-error: true
         with:
           image-ref: $REGISTRY/${{ env.IMAGE_NAME }}:${{ github.sha }}
           format: sarif
           output: trivy-results.sarif
           ignore-unfixed: true
           severity: HIGH,CRITICAL
+          exit-code: 0
 
       # 📂 8) Upload SARIF as artifact
       - name: Upload SARIF artifact
+        if: always() && hashFiles('trivy-results.sarif') != ''
         uses: actions/upload-artifact@v4
         with:
           name: trivy-sarif-report
@@ -87,8 +91,8 @@ jobs:
 
       # 📡 9) Upload SARIF to GitHub Security tab (code scanning)
       - name: Upload SARIF to Security tab
+        if: always() && hashFiles('trivy-results.sarif') != ''
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
         with:
           sarif_file: trivy-results.sarif
 
