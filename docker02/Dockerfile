@@ -11,8 +11,8 @@ RUN apt-get update && apt-get install -y \
     curl \
     && apt-get clean
 
-# Optional: preinstall Jenkins plugins via plugins.txt
-COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
+# Optional: preinstall Jenkins plugins via jenkins.txt
+COPY jenkins.txt /usr/share/jenkins/ref/plugins.txt
 RUN [ -f /usr/share/jenkins/ref/plugins.txt ] && \
     jenkins-plugin-cli --plugins < /usr/share/jenkins/ref/plugins.txt || true
 
