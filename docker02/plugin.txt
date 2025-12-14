@@ -1,0 +1,26 @@
+# Source Control / SCM
+git
+github-branch-source
+
+# Pipeline & Core Build
+workflow-aggregator
+pipeline-stage-view
+
+# Docker Support
+docker-workflow
+docker-plugin
+
+# Blue Ocean UI (includes dependencies)
+blueocean
+
+# Basic Utility
+credentials-binding
+plain-credentials
+
+# Test & Reporting
+junit
+xunit
+
+# Notifications (optional but useful)
+email-ext
+slack

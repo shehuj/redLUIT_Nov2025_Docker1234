@@ -1,0 +1,128 @@
+name: Jenkins Image - Build, Scan, Push
+
+## Trigger on push to main, PRs to main, or manual runs
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - 'docker02/**'
+      - '.github/workflows/docker-02-jenkins.yml'
+  pull_request:
+    branches: ["main"]
+    paths:
+      - 'docker02/**'
+      - '.github/workflows/docker-02-jenkins.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+  security-events: write   # Required to upload SARIF to GitHub Security tab
+
+env:
+  REGISTRY: docker.io           # Docker Hub (change to your registry if needed)
+  IMAGE_NAME: jenkins-custom
+
+jobs:
+  build_and_scan:
+    name: Build, Test & Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      # 🧾 1) Check out the code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 🧠 2) Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 🔑 3) Log in to Docker registry
+      - name: Log in to Docker registry
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 🛠 4) Build your custom image
+      - name: Build Docker image
+        run: |
+          TAG=${{ github.sha }}
+          docker build \
+            -t $REGISTRY/${{ env.IMAGE_NAME }}:$TAG \
+            -f docker02/Dockerfile docker02/
+
+      # 🧪 5) Optional – Run tests (if you have any)
+      - name: Run tests (optional)
+        run: |
+          echo "📌 Add your unit/integration tests here"
+          # Ex: npm test, pytest, go test, etc.
+
+      # 🔍 6) Trivy vulnerability scan – table format
+      - name: Trivy scan (table)
+        uses: aquasecurity/trivy-action@0.33.1
+        continue-on-error: true
+        with:
+          image-ref: $REGISTRY/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          format: table
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+          exit-code: 0
+
+      # 📊 7) Trivy SARIF report generation
+      - name: Trivy SARIF scan
+        uses: aquasecurity/trivy-action@0.33.1
+        continue-on-error: true
+        with:
+          image-ref: $REGISTRY/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          format: sarif
+          output: trivy-results.sarif
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+          exit-code: 0
+
+      # 📂 8) Upload SARIF as artifact
+      - name: Upload SARIF artifact
+        if: always() && hashFiles('trivy-results.sarif') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-sarif-report
+          path: trivy-results.sarif
+
+      # 📡 9) Upload SARIF to GitHub Security tab (code scanning)
+      - name: Upload SARIF to Security tab
+        if: always() && hashFiles('trivy-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-results.sarif
+
+  push_image:
+    name: Push Docker Image
+    runs-on: ubuntu-latest
+    needs: build_and_scan
+
+    # Only push on direct pushes (not PRs)
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker registry
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: docker02
+          file: docker02/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest

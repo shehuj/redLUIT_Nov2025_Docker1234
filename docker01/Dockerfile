@@ -10,10 +10,10 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy custom webpage
-COPY docker01/index.html /var/www/html/index.html
+COPY index.html /var/www/html/index.html
 
 # Optional: set ownership so Apache can serve correctly
-## RUN chown www-data:www-data /var/www/html/index.html
+RUN chown www-data:www-data /var/www/html/index.html
 
 # Expose HTTP port
 EXPOSE 80

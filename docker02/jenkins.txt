@@ -1,0 +1,115 @@
+a ***step-by-step Docker CLI workflow to:***
+
+✅ pull the Jenkins LTS image
+✅ create a volume
+✅ run Jenkins with persistent storage
+✅ retrieve the initial admin password
+✅ create a user via the UI
+✅ restart Jenkins with the same volume and verify persistence
+
+This follows standard Jenkins Docker image usage where Jenkins stores all its configuration (including users) 
+under /var/jenkins_home — so mounting a volume there will retain data across container restarts.
+
+1) Pull the Jenkins LTS image:
+- docker pull jenkins/jenkins:lts
+
+This pulls the official Jenkins LTS image from Docker Hub.
+
+
+2) Create a Docker volume for Jenkins
+- docker volume create jenkins-data
+
+This creates a named Docker volume (jenkins-data) that will persist Jenkins’s home directory.
+
+3) Run the Jenkins container with the volume and ports
+- docker run -d \
+  --name jenkins1 \
+  -p 8080:8080 \
+  -p 50000:50000 \
+  -v jenkins-data:/var/jenkins_home \
+  jenkins/jenkins:lts
+
+	•	-d runs it detached
+	•	-p 8080:8080 exposes the Jenkins UI
+	•	-p 50000:50000 for agent communication
+	•	-v jenkins-data:/var/jenkins_home mounts the persistent data volume
+
+
+4) Retrieve the initial Admin password
+The initial admin unlock password appears in logs and lives in the secrets directory.
+
+Option A — view logs:
+- docker logs jenkins1
+Look for the block of asterisks that prints the initial admin password.
+
+
+Option B — cat the secrets file
+- docker exec jenkins1 \
+  cat /var/jenkins_home/secrets/initialAdminPassword
+
+Copy that password — you’ll paste it into Jenkins’s setup wizard.
+
+5) Login and create a new user
+	1.	In your browser, visit: http://localhost:8080
+	2.	Enter the initial admin password from Step 4
+	3.	Choose Install suggested plugins
+	4.	When prompted, create a new admin user (e.g., devops_user)
+	5.	Complete setup and log in with the new user
+
+This is the normal Jenkins first-run setup where you install plugins and configure the first user.
+
+6) Stop & remove the first container
+- docker stop jenkins1
+- docker rm jenkins1
+
+You are not removing the volume, so all Jenkins data (including your created user) remains in jenkins-data.
+
+
+7) Launch a new Jenkins container using the same volume
+- docker run -d \
+  --name jenkins2 \
+  -p 8080:8080 \
+  -p 50000:50000 \
+  -v jenkins-data:/var/jenkins_home \
+  jenkins/jenkins:lts
+
+This attaches the same volume to a brand-new container instance.
+
+
+8) Verify persistence by logging in
+	1.	Visit http://localhost:8080
+	2.	Log in using the new user you created in Step 5 (e.g., devops_user)
+
+If the user exists and Jenkins loads your configuration and jobs, then data persisted successfully thanks to the volume.
+
+
+
+***Summary of Commands:***
+
+docker pull jenkins/jenkins:lts
+docker volume create jenkins-data
+
+docker run -d \
+  --name jenkins1 \
+  -p 8080:8080 \
+  -p 50000:50000 \
+  -v jenkins-data:/var/jenkins_home \
+  jenkins/jenkins:lts
+
+docker logs jenkins1
+# or
+docker exec jenkins1 cat /var/jenkins_home/secrets/initialAdminPassword
+
+# After login & user creation
+docker stop jenkins1
+docker rm jenkins1
+
+docker run -d \
+  --name jenkins2 \
+  -p 8080:8080 \
+  -p 50000:50000 \
+  -v jenkins-data:/var/jenkins_home \
+  jenkins/jenkins:lts
+
+
+
