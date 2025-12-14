@@ -4,8 +4,14 @@ name: Jenkins Image - Build, Scan, Push
 on:
   push:
     branches: ["main"]
+    paths:
+      - 'docker02/**'
+      - '.github/workflows/docker-02-jenkins.yml'
   pull_request:
     branches: ["main"]
+    paths:
+      - 'docker02/**'
+      - '.github/workflows/docker-02-jenkins.yml'
   workflow_dispatch:
 
 permissions:
@@ -44,7 +50,7 @@ jobs:
           TAG=${{ github.sha }}
           docker build \
             -t $REGISTRY/${{ env.IMAGE_NAME }}:$TAG \
-            -f Dockerfile .
+            -f docker02/Dockerfile docker02/
 
       # 🧪 5) Optional – Run tests (if you have any)
       - name: Run tests (optional)
@@ -110,7 +116,8 @@ jobs:
       - name: Build and Push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: docker02
+          file: docker02/Dockerfile
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}

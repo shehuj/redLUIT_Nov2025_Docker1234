@@ -1,0 +1,158 @@
+name: CI/CD Pipeline for Docker Image 01
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docker01/**'
+      - '.github/workflows/docker-01-deploy.yml'
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'docker01/**'
+      - '.github/workflows/docker-01-deploy.yml'
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+env:
+  IMAGE_NAME: redluit-nov2025-docker1234
+  AWS_REGION: us-east-1
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+  EC2_SSH_KEY: ${{ secrets.EC2_SSHKEY }}
+  EC2_HOST: ${{ secrets.EC2_HOST }}
+
+jobs:
+  build-test-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: |
+          docker build -f docker01/Dockerfile -t ${{ env.IMAGE_NAME }}:${{ github.sha }} .
+          docker tag ${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.IMAGE_NAME }}:latest
+
+      - name: Test - Start container
+        run: |
+          docker run -d --name test-container -p 8080:80 ${{ env.IMAGE_NAME }}:latest
+          sleep 5
+          
+      - name: Test - Health check
+        run: |
+          if curl -f http://localhost:8080; then
+            echo "✅ Container is responding"
+          else
+            echo "❌ Container health check failed"
+            docker logs test-container
+            exit 1
+          fi
+
+      - name: Test - Verify HTML content
+        run: |
+          if docker exec test-container test -f /var/www/html/index.html; then
+            echo "✅ index.html exists"
+          else
+            echo "❌ index.html not found"
+            exit 1
+          fi
+
+      - name: Cleanup test container
+        if: always()
+        run: docker rm -f test-container || true
+
+      - name: Security Scan - Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'image'
+          image-ref: ${{ env.IMAGE_NAME }}:latest
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+        env:
+          TRIVY_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          TRIVY_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Security Scan - Trivy output to console
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'image'
+          image-ref: ${{ env.IMAGE_NAME }}:latest
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          
+      - name: Login to Docker Hub
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push to Docker Hub
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker tag ${{ env.IMAGE_NAME }}:latest ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+          docker tag ${{ env.IMAGE_NAME }}:latest ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+  
+  deploy:
+    needs: build-test-scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ env.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            # Stop and remove old container
+            docker stop ${{ env.IMAGE_NAME }} || true
+            docker rm ${{ env.IMAGE_NAME }} || true
+            
+            # Pull latest image
+            docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+            
+            # Run new container
+            docker run -d \
+              --name ${{ env.IMAGE_NAME }} \
+              --restart unless-stopped \
+              -p 80:80 \
+              ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+            
+            # Verify deployment
+            sleep 5
+            if curl -f http://localhost; then
+              echo "✅ Deployment successful"
+            else
+              echo "❌ Deployment verification failed"
+              docker logs ${{ env.IMAGE_NAME }}
+              exit 1
+            fi
+
+      - name: Deployment notification
+        if: success()
+        run: |
+          echo "🚀 Successfully deployed to EC2!"
+          echo "URL: http://${{ env.EC2_HOST }}"
