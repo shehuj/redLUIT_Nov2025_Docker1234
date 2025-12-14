@@ -6,7 +6,7 @@ name: Full CI/CD Pipeline - Docker Image 01 (Build, Test, Scan, Publish & Deploy
 on:
   pull_request:
     branches:
-      - main
+#      - main
       - dev
     paths:
       - 'docker01/**'
@@ -45,6 +45,8 @@ on:
 # ═══════════════════════════════════════════════════════════════
 env:
   REGISTRY: docker.io
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKERHUB_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
   IMAGE_NAME: redluit-nov2025-docker1234
   PYTHON_VERSION: '3.12'
   CACHE_VERSION: v1

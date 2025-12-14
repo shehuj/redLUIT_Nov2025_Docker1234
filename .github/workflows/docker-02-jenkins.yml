@@ -8,7 +8,7 @@ on:
       - 'docker02/**'
       - '.github/workflows/docker-02-jenkins.yml'
   pull_request:
-    branches: ["main"]
+    branches: ["dev"]
     paths:
       - 'docker02/**'
       - '.github/workflows/docker-02-jenkins.yml'
@@ -20,8 +20,7 @@ permissions:
   security-events: write   # Required to upload SARIF to GitHub Security tab
 
 env:
-  REGISTRY: docker.io           # Docker Hub (change to your registry if needed)
-  IMAGE_NAME: jenkins-custom
+  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/jenkins-custom
 
 jobs:
   build_and_scan:
@@ -49,7 +48,7 @@ jobs:
         run: |
           TAG=${{ github.sha }}
           docker build \
-            -t $REGISTRY/${{ env.IMAGE_NAME }}:$TAG \
+            -t ${{ env.IMAGE_NAME }}:$TAG \
             -f docker02/Dockerfile docker02/
 
       # 🧪 5) Optional – Run tests (if you have any)
@@ -63,7 +62,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.33.1
         continue-on-error: true
         with:
-          image-ref: $REGISTRY/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          image-ref: ${{ env.IMAGE_NAME }}:${{ github.sha }}
           format: table
           ignore-unfixed: true
           severity: HIGH,CRITICAL
@@ -74,7 +73,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.33.1
         continue-on-error: true
         with:
-          image-ref: $REGISTRY/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          image-ref: ${{ env.IMAGE_NAME }}:${{ github.sha }}
           format: sarif
           output: trivy-results.sarif
           ignore-unfixed: true
@@ -124,5 +123,5 @@ jobs:
           file: docker02/Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:latest
