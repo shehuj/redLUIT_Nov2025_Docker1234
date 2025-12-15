@@ -188,7 +188,7 @@ jobs:
 
       - name: Comment test results on PR
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         continue-on-error: true
         with:
           script: |
@@ -394,7 +394,7 @@ jobs:
       # ─────────── Generate PR Comment ───────────
       - name: Generate PR comment with scan results
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         continue-on-error: true
         with:
           script: |
