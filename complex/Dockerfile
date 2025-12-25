@@ -40,7 +40,8 @@ RUN curl -fsSL https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_li
 
 # Install Python packages with flexible version constraints
 # Using >= to allow compatible updates while maintaining minimum versions
-RUN pip3 install --no-cache-dir \
+# --break-system-packages is needed for PEP 668 compliance in containerized environments
+RUN pip3 install --no-cache-dir --break-system-packages \
     'ansible>=9.0.0' \
     'boto3>=1.34.0' \
     'botocore>=1.34.0'

@@ -75,13 +75,14 @@ RUN curl -fsSL https://example.com/file2.zip -o file2.zip
 
 ```dockerfile
 # Good: Flexible constraints (recommended)
-RUN pip3 install --no-cache-dir \
+# Note: --break-system-packages is needed for PEP 668 compliance
+RUN pip3 install --no-cache-dir --break-system-packages \
     'ansible>=9.0.0' \
     'boto3>=1.34.0' \
     'botocore>=1.34.0'
 
 # Also acceptable: Exact pinning (may break over time)
-RUN pip3 install --no-cache-dir \
+RUN pip3 install --no-cache-dir --break-system-packages \
     ansible==9.1.0 \
     boto3==1.34.27 \
     botocore==1.34.27
@@ -95,6 +96,8 @@ RUN pip3 install --no-cache-dir ansible boto3 botocore
 - Allows compatible updates and security patches
 - Avoids strict version conflicts
 - More maintainable than exact pinning
+
+**PEP 668 Note**: Modern Python installations (Debian 12+) are "externally managed" and require `--break-system-packages` flag when installing via pip in system Python. This is safe in Docker containers as we control the entire environment.
 
 ### ✅ Layer Optimization
 

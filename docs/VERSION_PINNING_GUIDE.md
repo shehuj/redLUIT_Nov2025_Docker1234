@@ -140,11 +140,53 @@ We use `>=` for these reasons:
 ```dockerfile
 # Install Python packages with flexible version constraints
 # Using >= to allow compatible updates while maintaining minimum versions
-RUN pip3 install --no-cache-dir \
+# --break-system-packages is needed for PEP 668 compliance
+RUN pip3 install --no-cache-dir --break-system-packages \
     'ansible>=9.0.0' \
     'boto3>=1.34.0' \
     'botocore>=1.34.0'
 ```
+
+### PEP 668: Externally Managed Environments
+
+Modern Python installations (Debian 12+, Ubuntu 23.04+) are "externally managed" per [PEP 668](https://peps.python.org/pep-0668/). This prevents pip from modifying system Python packages.
+
+**Error you'll see:**
+```
+error: externally-managed-environment
+× This environment is externally managed
+╰─> To install Python packages system-wide, try apt install
+    python3-xyz, where xyz is the package you are trying to
+    install.
+```
+
+**Solutions:**
+
+1. **Use `--break-system-packages`** (Recommended for Docker):
+   ```dockerfile
+   RUN pip3 install --break-system-packages 'ansible>=9.0.0'
+   ```
+   - ✅ Safe in containers (we control everything)
+   - ✅ Simple and direct
+   - ⚠️ Don't use on host systems
+
+2. **Use virtual environment**:
+   ```dockerfile
+   RUN python3 -m venv /opt/venv
+   ENV PATH="/opt/venv/bin:$PATH"
+   RUN pip install 'ansible>=9.0.0'
+   ```
+   - ✅ Isolated environment
+   - ⚠️ More complex
+   - ⚠️ Larger image size
+
+3. **User installation**:
+   ```dockerfile
+   RUN pip3 install --user 'ansible>=9.0.0'
+   ```
+   - ✅ Respects PEP 668
+   - ⚠️ Path issues
+   - ⚠️ User-specific location
 
 ## Why We Don't Pin apt Packages
 
