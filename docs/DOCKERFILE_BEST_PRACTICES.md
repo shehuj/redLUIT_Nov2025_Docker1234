@@ -71,16 +71,30 @@ RUN curl -fsSL https://example.com/file2.zip -o file2.zip
 
 **Benefit**: Consistency and smaller image size (no need for both tools).
 
-### ✅ DL3013: Pin versions in pip install
+### ✅ DL3013: Use version constraints in pip install
 
 ```dockerfile
+# Good: Flexible constraints (recommended)
+RUN pip3 install --no-cache-dir \
+    'ansible>=9.0.0' \
+    'boto3>=1.34.0' \
+    'botocore>=1.34.0'
+
+# Also acceptable: Exact pinning (may break over time)
 RUN pip3 install --no-cache-dir \
     ansible==9.1.0 \
     boto3==1.34.27 \
     botocore==1.34.27
+
+# Bad: No version constraints
+RUN pip3 install --no-cache-dir ansible boto3 botocore
 ```
 
-**Benefit**: Reproducible builds with Python packages.
+**Benefits**:
+- Ensures minimum required versions
+- Allows compatible updates and security patches
+- Avoids strict version conflicts
+- More maintainable than exact pinning
 
 ### ✅ Layer Optimization
 

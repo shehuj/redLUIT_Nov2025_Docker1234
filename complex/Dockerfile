@@ -38,11 +38,12 @@ RUN curl -fsSL https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_li
     && mv terraform /usr/local/bin/ \
     && rm terraform.zip
 
-# Install Python packages with pinned versions
+# Install Python packages with flexible version constraints
+# Using >= to allow compatible updates while maintaining minimum versions
 RUN pip3 install --no-cache-dir \
-    ansible==9.1.0 \
-    boto3==1.34.27 \
-    botocore==1.34.27
+    'ansible>=9.0.0' \
+    'boto3>=1.34.0' \
+    'botocore>=1.34.0'
 
 # Copy plugins list and install Jenkins plugins
 COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
