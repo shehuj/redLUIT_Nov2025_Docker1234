@@ -11,12 +11,11 @@ LABEL version="1.0"
 # Switch to root user for system package installation
 USER root
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install system dependencies with best practices
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     vim \
     curl \
-    wget \
     unzip \
     python3 \
     python3-pip \
@@ -33,14 +32,17 @@ RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/s
     && chmod +x kubectl \
     && mv kubectl /usr/local/bin/
 
-# Install Terraform
-RUN wget -q https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip \
-    && unzip terraform_1.6.6_linux_amd64.zip \
+# Install Terraform using curl
+RUN curl -fsSL https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip -o terraform.zip \
+    && unzip terraform.zip \
     && mv terraform /usr/local/bin/ \
-    && rm terraform_1.6.6_linux_amd64.zip
+    && rm terraform.zip
 
-# Install Ansible
-RUN pip3 install --no-cache-dir ansible boto3 botocore
+# Install Python packages with pinned versions
+RUN pip3 install --no-cache-dir \
+    ansible==9.1.0 \
+    boto3==1.34.27 \
+    botocore==1.34.27
 
 # Copy plugins list and install Jenkins plugins
 COPY plugins.txt /usr/share/jenkins/ref/plugins.txt

@@ -1,0 +1,29 @@
+# Hadolint configuration for Dockerfile linting
+# https://github.com/hadolint/hadolint
+
+# Ignore specific rules if needed
+ignored:
+  # DL3008: We don't pin apt package versions as they change frequently
+  # and we want security updates from the base image
+  # - DL3008
+
+# Set failure threshold
+failure-threshold: warning
+
+# Trusted registries
+trustedRegistries:
+  - docker.io
+  - jenkins
+
+# Override severity levels if needed
+override:
+  error:
+    - DL3001
+    - DL3002
+  warning:
+    - DL3008
+    - DL3009
+  info:
+    - DL3015
+  style:
+    - DL3020
