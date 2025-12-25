@@ -1,29 +1,18 @@
 # Hadolint configuration for Dockerfile linting
 # https://github.com/hadolint/hadolint
 
-# Ignore specific rules if needed
+# DL3008: We don't pin apt package versions because:
+# - Package versions change frequently in Debian/Ubuntu repos
+# - We want to receive security updates from base image
+# - Pinning makes Dockerfile less portable across base image versions
+# - Our base image (jenkins/jenkins:lts) is regularly updated
 ignored:
-  # DL3008: We don't pin apt package versions as they change frequently
-  # and we want security updates from the base image
-  # - DL3008
+  - DL3008
 
-# Set failure threshold
-failure-threshold: warning
+# Set failure threshold - only fail on errors, not warnings
+failure-threshold: error
 
 # Trusted registries
 trustedRegistries:
   - docker.io
   - jenkins
-
-# Override severity levels if needed
-override:
-  error:
-    - DL3001
-    - DL3002
-  warning:
-    - DL3008
-    - DL3009
-  info:
-    - DL3015
-  style:
-    - DL3020
