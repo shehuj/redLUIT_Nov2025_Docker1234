@@ -1,0 +1,177 @@
+name: Advanced Level - Docker Compose CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'advanced/**'
+      - '.github/workflows/advanced-ci.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'advanced/**'
+  workflow_dispatch:
+
+jobs:
+  validate-compose:
+    name: Validate Docker Compose File
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yml
+        working-directory: advanced
+        run: |
+          docker compose version
+          docker compose config --quiet
+
+      - name: Lint docker-compose.yml
+        uses: actionshub/docker-compose-linter@v1
+        with:
+          file: advanced/docker-compose.yml
+
+  test-advanced:
+    name: Test Advanced Level - Docker Compose
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: validate-compose
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Make scripts executable
+        working-directory: advanced
+        run: chmod +x *.sh
+
+      - name: Test Script 1 - Setup with Docker Compose
+        working-directory: advanced
+        run: |
+          echo "Running Docker Compose setup..."
+          ./01-setup-jenkins.sh
+
+          echo "Waiting for Jenkins..."
+          sleep 60
+
+          # Verify service is running
+          docker compose ps
+          docker compose ps | grep jenkins_advanced | grep Up
+
+          # Verify volume
+          docker volume ls | grep jenkins_data_advanced
+
+          # Test endpoint
+          curl -f http://localhost:8080/login || exit 1
+
+      - name: Test Health Check
+        working-directory: advanced
+        run: |
+          # Wait for health check to pass
+          for i in {1..10}; do
+            HEALTH=$(docker inspect jenkins_advanced --format='{{.State.Health.Status}}')
+            echo "Health check attempt $i: $HEALTH"
+            if [ "$HEALTH" = "healthy" ]; then
+              echo "Container is healthy!"
+              break
+            fi
+            sleep 10
+          done
+
+      - name: Test Docker Compose Commands
+        working-directory: advanced
+        run: |
+          # Test various compose commands
+          docker compose logs --tail=50
+          docker compose ps
+          docker compose top
+
+      - name: Test Script 2 - Verify Persistence
+        working-directory: advanced
+        run: |
+          echo "Testing data persistence..."
+          ./02-verify-persistence.sh
+
+          sleep 45
+
+          # Verify container is running
+          docker compose ps | grep jenkins_advanced | grep Up
+
+          # Test endpoint
+          curl -f http://localhost:8080/login || exit 1
+
+      - name: Test Service Restart
+        working-directory: advanced
+        run: |
+          echo "Testing service restart..."
+          docker compose restart
+
+          sleep 30
+
+          # Verify it came back up
+          docker compose ps | grep jenkins_advanced | grep Up
+
+      - name: Collect Container Logs
+        if: always()
+        working-directory: advanced
+        run: |
+          echo "=== Docker Compose Logs ==="
+          docker compose logs
+
+          echo "=== Container Status ==="
+          docker compose ps
+
+      - name: Test Script 3 - Cleanup
+        if: always()
+        working-directory: advanced
+        run: |
+          echo "Running cleanup..."
+          ./03-cleanup.sh
+
+          # Verify cleanup
+          ! docker compose ps 2>/dev/null | grep jenkins_advanced
+          ! docker volume ls | grep jenkins_data_advanced
+
+  test-docker-compose-variations:
+    name: Test Different Docker Compose Versions
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compose-version: ['v2.20.0', 'v2.24.0', 'latest']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install specific Docker Compose version
+        if: matrix.compose-version != 'latest'
+        run: |
+          COMPOSE_VERSION=${{ matrix.compose-version }}
+          curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+          docker-compose version
+
+      - name: Validate compose file
+        working-directory: advanced
+        run: docker compose config --quiet
+
+  lint-scripts:
+    name: Lint Shell Scripts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './advanced'
+          severity: warning

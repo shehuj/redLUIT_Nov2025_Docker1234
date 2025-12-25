@@ -1,0 +1,37 @@
+# Essential Jenkins Plugins for CI/CD
+# Format: plugin-id:version or plugin-id (for latest)
+
+# Core plugins
+git:latest
+github:latest
+github-branch-source:latest
+workflow-aggregator:latest
+pipeline-stage-view:latest
+
+# Build and deployment
+docker-workflow:latest
+docker-plugin:latest
+kubernetes:latest
+ansible:latest
+
+# Code quality and testing
+junit:latest
+jacoco:latest
+sonarqube-scanner:latest
+warnings-ng:latest
+
+# Credentials and security
+credentials-binding:latest
+ssh-agent:latest
+ssh-credentials:latest
+
+# Notifications
+email-ext:latest
+slack:latest
+
+# Utilities
+configuration-as-code:latest
+job-dsl:latest
+timestamper:latest
+build-timeout:latest
+ws-cleanup:latest
