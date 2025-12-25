@@ -1,0 +1,94 @@
+jenkins:
+  systemMessage: "Jenkins configured using Configuration as Code (CasC) - redLUIT Project"
+  numExecutors: 2
+  mode: NORMAL
+  scmCheckoutRetryCount: 3
+
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          password: "admin123"
+          name: "Admin User"
+          description: "Default admin user"
+
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+  remotingSecurity:
+    enabled: true
+
+  crumbIssuer:
+    standard:
+      excludeClientIPFromCrumb: false
+
+unclassified:
+  location:
+    url: "http://localhost:8080/"
+    adminAddress: "admin@redluit.local"
+
+  timestamper:
+    allPipelines: true
+    elapsedTimeFormat: "'<b>'HH:mm:ss.S'</b> '"
+    systemTimeFormat: "'<b>'HH:mm:ss'</b> '"
+
+  globalLibraries:
+    libraries:
+      - name: "shared-pipeline-library"
+        defaultVersion: "main"
+        implicit: false
+        allowVersionOverride: true
+        retriever:
+          modernSCM:
+            scm:
+              git:
+                remote: "https://github.com/redluit/shared-pipeline-library.git"
+
+tool:
+  git:
+    installations:
+      - name: "Default"
+        home: "git"
+
+  maven:
+    installations:
+      - name: "Maven 3.9"
+        properties:
+          - installSource:
+              installers:
+                - maven:
+                    id: "3.9.6"
+
+  jdk:
+    installations:
+      - name: "JDK 11"
+        properties:
+          - installSource:
+              installers:
+                - adoptOpenJdkInstaller:
+                    id: "jdk-11.0.12+7"
+
+jobs:
+  - script: >
+      pipelineJob('sample-pipeline') {
+        description('Sample pipeline job created via CasC')
+        definition {
+          cps {
+            script('''
+              pipeline {
+                agent any
+                stages {
+                  stage('Hello') {
+                    steps {
+                      echo 'Hello from Jenkins CasC!'
+                    }
+                  }
+                }
+              }
+            ''')
+            sandbox(true)
+          }
+        }
+      }

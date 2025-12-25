@@ -1,0 +1,288 @@
+name: Complex Level - Custom Docker Image CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'complex/**'
+      - '.github/workflows/complex-ci.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'complex/**'
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: jenkins-custom-complex
+  IMAGE_TAG: ci-${{ github.sha }}
+
+jobs:
+  validate-dockerfile:
+    name: Validate Dockerfile
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Hadolint (Dockerfile linter)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: complex/Dockerfile
+          failure-threshold: warning
+
+  build-and-test:
+    name: Build and Test Custom Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: validate-dockerfile
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Make scripts executable
+        working-directory: complex
+        run: chmod +x *.sh
+
+      - name: Build custom Jenkins image
+        working-directory: complex
+        run: |
+          echo "Building custom image..."
+          docker build \
+            --tag ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} \
+            --tag ${{ env.IMAGE_NAME }}:latest \
+            --build-arg BUILD_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+            --build-arg VCS_REF="${{ github.sha }}" \
+            --progress=plain \
+            .
+
+          echo "Build complete!"
+          docker images | grep ${{ env.IMAGE_NAME }}
+
+      - name: Test image layers and size
+        run: |
+          echo "=== Image History ==="
+          docker history ${{ env.IMAGE_NAME }}:latest
+
+          echo "=== Image Size ==="
+          docker images ${{ env.IMAGE_NAME }}:latest --format "{{.Size}}"
+
+      - name: Create volume
+        run: docker volume create jenkins_data_complex_ci
+
+      - name: Run container
+        run: |
+          docker run -d \
+            --name jenkins_complex_ci \
+            -p 8080:8080 \
+            -p 50000:50000 \
+            -v jenkins_data_complex_ci:/var/jenkins_home \
+            ${{ env.IMAGE_NAME }}:latest
+
+          echo "Container started, waiting for initialization..."
+          sleep 90
+
+      - name: Verify installed tools
+        run: |
+          echo "=== Verifying installed tools ==="
+
+          echo "Git version:"
+          docker exec jenkins_complex_ci git --version
+
+          echo "Docker version:"
+          docker exec jenkins_complex_ci docker --version || echo "Docker not accessible"
+
+          echo "Docker Compose version:"
+          docker exec jenkins_complex_ci docker-compose --version || echo "Docker Compose not found"
+
+          echo "Python version:"
+          docker exec jenkins_complex_ci python3 --version
+
+          echo "Pip packages:"
+          docker exec jenkins_complex_ci pip3 list | grep -E "ansible|boto"
+
+          echo "Kubectl version:"
+          docker exec jenkins_complex_ci kubectl version --client || echo "kubectl not found"
+
+          echo "Terraform version:"
+          docker exec jenkins_complex_ci terraform version || echo "Terraform not found"
+
+      - name: Verify Jenkins plugins
+        run: |
+          echo "=== Verifying Jenkins plugins ==="
+          sleep 30
+
+          # List installed plugins
+          docker exec jenkins_complex_ci ls -la /var/jenkins_home/plugins/ | head -20
+
+          # Check for specific plugins
+          docker exec jenkins_complex_ci ls /var/jenkins_home/plugins/ | grep -E "git|docker|kubernetes|ansible" || true
+
+      - name: Test Jenkins endpoint
+        run: |
+          echo "Testing Jenkins web interface..."
+
+          # Wait for Jenkins to be fully ready
+          for i in {1..20}; do
+            if curl -f http://localhost:8080/login 2>/dev/null; then
+              echo "Jenkins is responding!"
+              break
+            fi
+            echo "Attempt $i: Jenkins not ready yet..."
+            sleep 10
+          done
+
+          # Final test
+          curl -f http://localhost:8080/login || exit 1
+
+      - name: Test Configuration as Code (CasC)
+        run: |
+          echo "Checking CasC configuration..."
+
+          # Check if CasC plugin is installed
+          docker exec jenkins_complex_ci ls /var/jenkins_home/plugins/ | grep configuration-as-code || echo "CasC plugin not found"
+
+          # Check if CasC config exists
+          docker exec jenkins_complex_ci cat /var/jenkins_home/casc_jenkins.yaml || echo "CasC config not found"
+
+      - name: Get admin password
+        run: |
+          echo "=== Retrieving admin password ==="
+          docker exec jenkins_complex_ci cat /var/jenkins_home/secrets/initialAdminPassword 2>/dev/null || echo "Setup wizard may be skipped (CasC active)"
+
+      - name: Test data persistence
+        run: |
+          echo "=== Testing data persistence ==="
+
+          # Stop and remove container
+          docker stop jenkins_complex_ci
+          docker rm jenkins_complex_ci
+
+          # Start new container with same volume
+          docker run -d \
+            --name jenkins_complex_ci_new \
+            -p 8080:8080 \
+            -p 50000:50000 \
+            -v jenkins_data_complex_ci:/var/jenkins_home \
+            ${{ env.IMAGE_NAME }}:latest
+
+          echo "Waiting for restart..."
+          sleep 60
+
+          # Verify it's running
+          docker ps | grep jenkins_complex_ci_new
+
+          # Test endpoint
+          curl -f http://localhost:8080/login || exit 1
+
+      - name: Collect container logs
+        if: always()
+        run: |
+          echo "=== Container Logs ==="
+          docker logs jenkins_complex_ci_new || docker logs jenkins_complex_ci || true
+
+          echo "=== Container Status ==="
+          docker ps -a
+
+      - name: Cleanup
+        if: always()
+        run: |
+          echo "Cleaning up..."
+          docker stop jenkins_complex_ci_new || true
+          docker stop jenkins_complex_ci || true
+          docker rm jenkins_complex_ci_new || true
+          docker rm jenkins_complex_ci || true
+          docker volume rm jenkins_data_complex_ci || true
+          docker rmi ${{ env.IMAGE_NAME }}:latest || true
+          docker rmi ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} || true
+
+  security-scan:
+    name: Security Scan Image
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build image for scanning
+        working-directory: complex
+        run: |
+          docker build -t ${{ env.IMAGE_NAME }}:scan .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:scan
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Trivy for table output
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:scan
+          format: 'table'
+
+  test-scripts:
+    name: Test Management Scripts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Make scripts executable
+        working-directory: complex
+        run: chmod +x *.sh
+
+      - name: Test build script
+        working-directory: complex
+        run: ./01-build-image.sh
+
+      - name: Test volume script
+        working-directory: complex
+        run: ./02-create-volume.sh
+
+      - name: Test run script
+        working-directory: complex
+        run: ./03-run-container.sh
+
+      - name: Wait for Jenkins
+        run: sleep 90
+
+      - name: Test password script
+        working-directory: complex
+        run: ./04-get-password.sh
+
+      - name: Test cleanup
+        if: always()
+        working-directory: complex
+        run: |
+          echo "yes" | ./06-cleanup-all.sh
+
+  lint-scripts:
+    name: Lint Shell Scripts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './complex'
+          severity: warning

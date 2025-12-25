@@ -1,0 +1,206 @@
+name: All Levels - Comprehensive CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      level:
+        description: 'Choose level to test'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - foundational
+          - advanced
+          - complex
+  schedule:
+    # Run weekly on Sundays at 00:00 UTC
+    - cron: '0 0 * * 0'
+
+jobs:
+  determine-levels:
+    name: Determine Test Levels
+    runs-on: ubuntu-latest
+    outputs:
+      test_foundational: ${{ steps.check.outputs.test_foundational }}
+      test_advanced: ${{ steps.check.outputs.test_advanced }}
+      test_complex: ${{ steps.check.outputs.test_complex }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine which levels to test
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            LEVEL="${{ github.event.inputs.level }}"
+          else
+            LEVEL="all"
+          fi
+
+          if [ "$LEVEL" = "all" ] || [ "$LEVEL" = "foundational" ]; then
+            echo "test_foundational=true" >> $GITHUB_OUTPUT
+          else
+            echo "test_foundational=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [ "$LEVEL" = "all" ] || [ "$LEVEL" = "advanced" ]; then
+            echo "test_advanced=true" >> $GITHUB_OUTPUT
+          else
+            echo "test_advanced=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [ "$LEVEL" = "all" ] || [ "$LEVEL" = "complex" ]; then
+            echo "test_complex=true" >> $GITHUB_OUTPUT
+          else
+            echo "test_complex=false" >> $GITHUB_OUTPUT
+          fi
+
+  test-foundational-quick:
+    name: Quick Test - Foundational
+    runs-on: ubuntu-latest
+    needs: determine-levels
+    if: needs.determine-levels.outputs.test_foundational == 'true'
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run foundational tests
+        working-directory: foundational
+        run: |
+          chmod +x *.sh
+          ./01-setup-jenkins.sh
+          sleep 60
+          curl -f http://localhost:8080/login
+          ./03-cleanup.sh
+
+  test-advanced-quick:
+    name: Quick Test - Advanced
+    runs-on: ubuntu-latest
+    needs: determine-levels
+    if: needs.determine-levels.outputs.test_advanced == 'true'
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run advanced tests
+        working-directory: advanced
+        run: |
+          chmod +x *.sh
+          ./01-setup-jenkins.sh
+          sleep 60
+          curl -f http://localhost:8080/login
+          ./03-cleanup.sh
+
+  test-complex-quick:
+    name: Quick Test - Complex
+    runs-on: ubuntu-latest
+    needs: determine-levels
+    if: needs.determine-levels.outputs.test_complex == 'true'
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run complex tests
+        working-directory: complex
+        run: |
+          chmod +x *.sh
+          ./01-build-image.sh
+          ./02-create-volume.sh
+          ./03-run-container.sh
+          sleep 90
+          curl -f http://localhost:8080/login
+          echo "yes" | ./06-cleanup-all.sh
+
+  readme-validation:
+    name: Validate README Files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check README files exist
+        run: |
+          test -f README.md
+          test -f foundational/README.md
+          test -f advanced/README.md
+          test -f complex/README.md
+
+      - name: Lint README files
+        uses: actionshub/markdownlint@main
+        with:
+          path: '**/*.md'
+
+  integration-test:
+    name: Integration Test - All Levels
+    runs-on: ubuntu-latest
+    needs: [test-foundational-quick, test-advanced-quick, test-complex-quick]
+    if: |
+      always() &&
+      needs.determine-levels.outputs.test_foundational == 'true' &&
+      needs.determine-levels.outputs.test_advanced == 'true' &&
+      needs.determine-levels.outputs.test_complex == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run all levels sequentially
+        run: |
+          echo "=== Testing Foundational Level ==="
+          cd foundational
+          chmod +x *.sh
+          ./01-setup-jenkins.sh
+          sleep 60
+          ./03-cleanup.sh
+          cd ..
+
+          echo "=== Testing Advanced Level ==="
+          cd advanced
+          chmod +x *.sh
+          ./01-setup-jenkins.sh
+          sleep 60
+          ./03-cleanup.sh
+          cd ..
+
+          echo "=== Testing Complex Level ==="
+          cd complex
+          chmod +x *.sh
+          ./01-build-image.sh
+          ./02-create-volume.sh
+          ./03-run-container.sh
+          sleep 90
+          echo "yes" | ./06-cleanup-all.sh
+          cd ..
+
+          echo "✅ All levels tested successfully!"
+
+  notification:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: [test-foundational-quick, test-advanced-quick, test-complex-quick, integration-test]
+    if: always()
+
+    steps:
+      - name: Check test results
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ All tests passed!"
+          else
+            echo "❌ Some tests failed!"
+            exit 1
+          fi

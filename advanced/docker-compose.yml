@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins_advanced
+    user: root
+    ports:
+      - "8080:8080"      # Jenkins UI
+      - "50000:50000"    # Agent port
+    volumes:
+      - jenkins_data_advanced:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - JENKINS_OPTS=--prefix=/jenkins
+      - JAVA_OPTS=-Djava.awt.headless=true
+    restart: unless-stopped
+    networks:
+      - jenkins_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/login || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  jenkins_data_advanced:
+    driver: local
+
+networks:
+  jenkins_network:
+    driver: bridge

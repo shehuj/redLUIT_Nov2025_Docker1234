@@ -1,0 +1,136 @@
+name: Foundational Level - Jenkins CLI Deployment CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'foundational/**'
+      - '.github/workflows/foundational-ci.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'foundational/**'
+  workflow_dispatch:
+
+jobs:
+  test-foundational:
+    name: Test Foundational Level Scripts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Verify Docker installation
+        run: |
+          docker --version
+          docker info
+
+      - name: Make scripts executable
+        working-directory: foundational
+        run: chmod +x *.sh
+
+      - name: Test Script 1 - Setup Jenkins
+        working-directory: foundational
+        run: |
+          echo "Running setup script..."
+          ./01-setup-jenkins.sh
+
+          echo "Waiting for Jenkins to be fully ready..."
+          sleep 60
+
+          # Verify container is running
+          docker ps | grep jenkins_foundational
+
+          # Verify volume exists
+          docker volume ls | grep jenkins_data_foundational
+
+          # Test Jenkins endpoint
+          curl -f http://localhost:8080/login || exit 1
+
+      - name: Test Script 2 - Verify Persistence
+        working-directory: foundational
+        run: |
+          echo "Testing data persistence..."
+          # This will stop the old container and start a new one
+          echo "yes" | ./02-verify-persistence.sh || true
+
+          sleep 45
+
+          # Verify new container is running
+          docker ps | grep jenkins_foundational_new
+
+          # Test endpoint again
+          curl -f http://localhost:8080/login || exit 1
+
+      - name: Collect Container Logs
+        if: always()
+        run: |
+          echo "=== Jenkins Container Logs ==="
+          docker logs jenkins_foundational_new || docker logs jenkins_foundational || true
+
+          echo "=== Running Containers ==="
+          docker ps -a
+
+      - name: Test Script 3 - Cleanup
+        if: always()
+        working-directory: foundational
+        run: |
+          echo "Running cleanup..."
+          ./03-cleanup.sh
+
+          # Verify everything is cleaned up
+          ! docker ps -a | grep jenkins_foundational
+          ! docker volume ls | grep jenkins_data_foundational
+
+      - name: Verify Cleanup
+        if: always()
+        run: |
+          echo "=== Remaining Containers ==="
+          docker ps -a | grep jenkins || echo "No Jenkins containers found - OK"
+
+          echo "=== Remaining Volumes ==="
+          docker volume ls | grep jenkins || echo "No Jenkins volumes found - OK"
+
+  lint-scripts:
+    name: Lint Shell Scripts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './foundational'
+          severity: warning
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: './foundational'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
