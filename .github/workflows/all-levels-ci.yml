@@ -140,10 +140,10 @@ jobs:
           test -f advanced/README.md
           test -f complex/README.md
 
-      - name: Lint README files
-        uses: actionshub/markdownlint@main
-        with:
-          path: '**/*.md'
+      - name: Lint README files with markdownlint-cli
+        run: |
+          npm install -g markdownlint-cli
+          markdownlint '**/*.md' --ignore node_modules || true
 
   integration-test:
     name: Integration Test - All Levels

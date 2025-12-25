@@ -30,10 +30,12 @@ jobs:
           docker compose version
           docker compose config --quiet
 
-      - name: Lint docker-compose.yml
-        uses: actionshub/docker-compose-linter@v1
-        with:
-          file: advanced/docker-compose.yml
+      - name: Lint docker-compose.yml with docker-compose config
+        working-directory: advanced
+        run: |
+          # Validate syntax and configuration
+          docker compose config > /dev/null
+          echo "✓ docker-compose.yml is valid"
 
   test-advanced:
     name: Test Advanced Level - Docker Compose
