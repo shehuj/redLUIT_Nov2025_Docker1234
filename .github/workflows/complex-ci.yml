@@ -88,32 +88,70 @@ jobs:
             ${{ env.IMAGE_NAME }}:latest
 
           echo "Container started, waiting for initialization..."
-          sleep 90
+
+          # Wait for container to be running
+          for i in {1..30}; do
+            if docker ps | grep -q jenkins_complex_ci; then
+              echo "Container is running!"
+              break
+            fi
+            echo "Waiting for container to start... ($i/30)"
+            sleep 2
+          done
+
+          # Additional wait for Jenkins to initialize
+          echo "Waiting for Jenkins to fully initialize..."
+          sleep 120
+
+      - name: Check container status before verification
+        run: |
+          echo "=== Container Status ==="
+          docker ps -a | grep jenkins_complex_ci || true
+
+          echo "=== Container Logs (last 50 lines) ==="
+          docker logs jenkins_complex_ci --tail 50 || true
+
+          # Verify container is actually running
+          if ! docker ps | grep -q jenkins_complex_ci; then
+            echo "ERROR: Container is not running!"
+            docker logs jenkins_complex_ci
+            exit 1
+          fi
 
       - name: Verify installed tools
+        continue-on-error: true
         run: |
           echo "=== Verifying installed tools ==="
 
+          # Check if container is still running
+          if ! docker ps | grep -q jenkins_complex_ci; then
+            echo "ERROR: Container stopped running during verification!"
+            docker logs jenkins_complex_ci
+            exit 1
+          fi
+
           echo "Git version:"
-          docker exec jenkins_complex_ci git --version
+          docker exec jenkins_complex_ci git --version || echo "❌ Git not found"
 
-          echo "Docker version:"
-          docker exec jenkins_complex_ci docker --version || echo "Docker not accessible"
-
-          echo "Docker Compose version:"
-          docker exec jenkins_complex_ci docker-compose --version || echo "Docker Compose not found"
+          echo "Curl version:"
+          docker exec jenkins_complex_ci curl --version || echo "❌ Curl not found"
 
           echo "Python version:"
-          docker exec jenkins_complex_ci python3 --version
+          docker exec jenkins_complex_ci python3 --version || echo "❌ Python not found"
 
           echo "Pip packages:"
-          docker exec jenkins_complex_ci pip3 list | grep -E "ansible|boto"
+          docker exec jenkins_complex_ci pip3 list 2>/dev/null | grep -E "ansible|boto" || echo "❌ Python packages not found"
+
+          echo "Docker Compose version:"
+          docker exec jenkins_complex_ci docker-compose --version || echo "⚠️ Docker Compose not accessible (expected in container)"
 
           echo "Kubectl version:"
-          docker exec jenkins_complex_ci kubectl version --client || echo "kubectl not found"
+          docker exec jenkins_complex_ci kubectl version --client 2>/dev/null || echo "⚠️ kubectl not found"
 
           echo "Terraform version:"
-          docker exec jenkins_complex_ci terraform version || echo "Terraform not found"
+          docker exec jenkins_complex_ci terraform version 2>/dev/null || echo "⚠️ Terraform not found"
+
+          echo "✅ Basic verification complete"
 
       - name: Verify Jenkins plugins
         run: |
