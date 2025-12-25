@@ -46,7 +46,8 @@ RUN pip3 install --no-cache-dir --break-system-packages \
     'boto3>=1.34.0' \
     'botocore>=1.34.0'
 
-# Copy plugins list and install Jenkins plugins
+# Copy plugins list and install essential Jenkins plugins
+# Using minimal plugin set for reliability - add more plugins via Jenkins UI after deployment
 COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
 RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
 
