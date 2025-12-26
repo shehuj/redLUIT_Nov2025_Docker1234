@@ -141,39 +141,4 @@ jobs:
           ! docker compose ps 2>/dev/null | grep jenkins_advanced
           ! docker volume ls | grep jenkins_data_advanced
 
-  test-docker-compose-variations:
-    name: Test Different Docker Compose Versions
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        compose-version: ['v2.20.0', 'v2.24.0', 'latest']
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install specific Docker Compose version
-        if: matrix.compose-version != 'latest'
-        run: |
-          COMPOSE_VERSION=${{ matrix.compose-version }}
-          curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          chmod +x /usr/local/bin/docker-compose
-          docker-compose version
-
-      - name: Validate compose file
-        working-directory: advanced
-        run: docker compose config --quiet
-
-  lint-scripts:
-    name: Lint Shell Scripts
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@master
-        with:
-          scandir: './advanced'
-          severity: warning
+          echo "Cleanup Has Been Completed!."

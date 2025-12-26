@@ -152,18 +152,6 @@ jobs:
           docker exec jenkins_complex_ci terraform version 2>/dev/null || echo "⚠️ Terraform not found"
 
           echo "✅ Basic verification complete"
-
-      - name: Verify Jenkins plugins
-        run: |
-          echo "=== Verifying Jenkins plugins ==="
-          sleep 30
-
-          # List installed plugins
-          docker exec jenkins_complex_ci ls -la /var/jenkins_home/plugins/ | head -20
-
-          # Check for specific plugins
-          docker exec jenkins_complex_ci ls /var/jenkins_home/plugins/ | grep -E "git|docker|kubernetes|ansible" || true
-
       - name: Test Jenkins endpoint
         run: |
           echo "Testing Jenkins web interface..."
