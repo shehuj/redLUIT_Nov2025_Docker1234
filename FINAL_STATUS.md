@@ -120,8 +120,62 @@ timestamper
 
 ---
 
-### 5. GitHub Actions Workflow Issues ✅
-**Problem**: Non-existent GitHub Actions being used
+### 5. Jenkins Container Crash (Exit Code 5) ✅
+**Problem**: Custom Jenkins container kept crashing on startup with exit code 5
+
+**Error**:
+```
+jenkins_complex exited with code 5
+INFO: Jenkins stopped. Shutdown complete
+```
+
+**Root Cause**: Complex Configuration as Code (CasC) in `jenkins.yaml`:
+- Referenced non-existent plugins (job-dsl, maven)
+- Security configuration conflicted with setup wizard
+- Tool installers not available
+
+**Solution**: Simplified `jenkins.yaml` to minimal configuration
+```yaml
+# Before (crash-prone)
+jenkins:
+  securityRealm:
+    local:
+      users:
+        - id: "admin"
+          password: "admin123"  # Caused conflicts
+tool:
+  maven:  # Plugin not installed
+  jdk:    # Installer not available
+jobs:
+  - script: >  # Requires job-dsl plugin
+
+# After (stable)
+jenkins:
+  systemMessage: "Jenkins configured using CasC"
+  numExecutors: 2
+  mode: NORMAL
+tool:
+  git:  # Only what's actually installed
+    installations:
+      - name: "Default"
+        home: "git"
+```
+
+**Benefits**:
+- Container starts reliably
+- Setup wizard remains enabled
+- Users configure security via UI
+- No plugin dependency issues
+
+**Files Modified**:
+- `complex/jenkins.yaml`
+- `complex/Dockerfile` (removed `-Djenkins.install.runSetupWizard=false`)
+- `docs/JENKINS_CASC.md` (created)
+
+---
+
+### 6. GitHub Actions Workflow Issues ✅
+**Problem 1**: Non-existent GitHub Actions being used
 
 **Errors**:
 - `actionshub/docker-compose-linter@v1` - repository not found
@@ -130,10 +184,46 @@ timestamper
 **Solutions**:
 - Replaced with native `docker compose config` validation
 - Replaced with `markdownlint-cli` npm package
-- Improved timing and wait logic in complex-ci.yml
-- Added container status checks
+
+**Problem 2**: Jenkins initialization timing issues causing 404 errors
+
+**Error**:
+```
+curl: (22) The requested URL returned error: 404
+Error: Process completed with exit code 22
+```
+
+**Root Cause**: Fixed sleep times didn't account for varying Jenkins startup duration
+
+**Solution**: Implemented robust polling loops with curl checks
+```bash
+# Wait for Jenkins to be ready (up to 3 minutes)
+for i in {1..36}; do
+  if curl -f http://localhost:8080/login 2>/dev/null; then
+    echo "✅ Jenkins is responding!"
+    break
+  fi
+  echo "Waiting for Jenkins... ($i/36)"
+  sleep 5
+done
+
+# Final test with error handling
+curl -f http://localhost:8080/login || {
+  echo "Jenkins failed to start. Checking logs..."
+  docker logs <container_name> --tail=100
+  exit 1
+}
+```
+
+**Benefits**:
+- Prevents premature test failures
+- Adapts to varying startup times
+- Provides clear progress feedback
+- Automatically collects logs on failure
+- All workflows now consistent
 
 **Files Modified**:
+- `.github/workflows/foundational-ci.yml`
 - `.github/workflows/advanced-ci.yml`
 - `.github/workflows/all-levels-ci.yml`
 - `.github/workflows/complex-ci.yml`
@@ -155,15 +245,16 @@ timestamper
 - Integration testing
 
 ### 3. Comprehensive Documentation
-Created 7 documentation files:
+Created 8 documentation files:
 
 1. **README.md** - Main repository guide
 2. **docs/DOCKERFILE_BEST_PRACTICES.md** - Docker optimization
 3. **docs/VERSION_PINNING_GUIDE.md** - Python package versioning
 4. **docs/PEP668_FIX.md** - PEP 668 explanation
 5. **docs/JENKINS_PLUGINS.md** - Plugin management
-6. **CHANGES.md** - Complete change log
-7. **FINAL_STATUS.md** - This file
+6. **docs/JENKINS_CASC.md** - Configuration as Code guide
+7. **CHANGES.md** - Complete change log
+8. **FINAL_STATUS.md** - This file
 
 Plus level-specific READMEs:
 - `foundational/README.md`
@@ -269,7 +360,8 @@ redLUIT_Nov2025_Docker1234/
 │   ├── DOCKERFILE_BEST_PRACTICES.md
 │   ├── VERSION_PINNING_GUIDE.md
 │   ├── PEP668_FIX.md
-│   └── JENKINS_PLUGINS.md
+│   ├── JENKINS_PLUGINS.md
+│   └── JENKINS_CASC.md ✅ Created
 │
 ├── .hadolint.yaml ✅ Created
 ├── README.md
@@ -455,7 +547,7 @@ When pushed to GitHub, workflows will:
 - ✅ CI/CD pipelines operational
 
 ### Documentation
-- ✅ 7 comprehensive guides
+- ✅ 8 comprehensive guides
 - ✅ 4 level-specific READMEs
 - ✅ Inline code comments
 - ✅ Troubleshooting sections
@@ -474,9 +566,9 @@ The repository has been completely refactored to meet all requirements with:
 - Security considerations
 - Optimized build process
 
-**Total Time Investment**: ~4 hours of refactoring
-**Files Created/Modified**: 40+ files
-**Documentation Pages**: 7 comprehensive guides
+**Total Time Investment**: ~5 hours of refactoring
+**Files Created/Modified**: 45+ files
+**Documentation Pages**: 8 comprehensive guides
 **Code Quality**: Linter-compliant, best practices
 
 The repository is now ready for:

@@ -43,8 +43,8 @@ jobs:
           echo "Running setup script..."
           ./01-setup-jenkins.sh
 
-          echo "Waiting for Jenkins to be fully ready..."
-          sleep 60
+          echo "Waiting for Jenkins to start..."
+          sleep 30
 
           # Verify container is running
           docker ps | grep jenkins_foundational
@@ -52,8 +52,23 @@ jobs:
           # Verify volume exists
           docker volume ls | grep jenkins_data_foundational
 
-          # Test Jenkins endpoint
-          curl -f http://localhost:8080/login || exit 1
+          echo "Waiting for Jenkins to fully initialize..."
+          # Wait for Jenkins to be ready (up to 3 minutes)
+          for i in {1..36}; do
+            if curl -f http://localhost:8080/login 2>/dev/null; then
+              echo "✅ Jenkins is responding!"
+              break
+            fi
+            echo "Waiting for Jenkins... ($i/36)"
+            sleep 5
+          done
+
+          # Final test
+          curl -f http://localhost:8080/login || {
+            echo "Jenkins failed to start properly. Checking logs..."
+            docker logs jenkins_foundational --tail=100
+            exit 1
+          }
 
       - name: Test Script 2 - Verify Persistence
         working-directory: foundational
@@ -62,13 +77,29 @@ jobs:
           # This will stop the old container and start a new one
           echo "yes" | ./02-verify-persistence.sh || true
 
-          sleep 45
+          echo "Waiting for new container to start..."
+          sleep 30
 
           # Verify new container is running
           docker ps | grep jenkins_foundational_new
 
-          # Test endpoint again
-          curl -f http://localhost:8080/login || exit 1
+          echo "Waiting for Jenkins to initialize after restart..."
+          # Wait for Jenkins (up to 3 minutes)
+          for i in {1..36}; do
+            if curl -f http://localhost:8080/login 2>/dev/null; then
+              echo "✅ Jenkins restarted successfully!"
+              break
+            fi
+            echo "Waiting for Jenkins... ($i/36)"
+            sleep 5
+          done
+
+          # Final test
+          curl -f http://localhost:8080/login || {
+            echo "Jenkins failed to restart. Checking logs..."
+            docker logs jenkins_foundational_new --tail=100
+            exit 1
+          }
 
       - name: Collect Container Logs
         if: always()

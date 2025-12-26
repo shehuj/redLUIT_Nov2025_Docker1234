@@ -172,6 +172,42 @@ Created:
    - Added `ignore: DL3008` parameter
    - Set `failure-threshold: error`
 
+### Improved Jenkins Initialization Timing
+
+All three CI workflows updated with robust polling loops instead of fixed sleep times:
+
+**Pattern Applied:**
+```bash
+# Wait for Jenkins to be ready (up to 3 minutes)
+for i in {1..36}; do
+  if curl -f http://localhost:8080/login 2>/dev/null; then
+    echo "✅ Jenkins is responding!"
+    break
+  fi
+  echo "Waiting for Jenkins... ($i/36)"
+  sleep 5
+done
+
+# Final test with error handling
+curl -f http://localhost:8080/login || {
+  echo "Jenkins failed to start properly. Checking logs..."
+  docker logs <container_name> --tail=100
+  exit 1
+}
+```
+
+**Benefits:**
+- Prevents premature test failures (404 errors)
+- Adapts to varying Jenkins startup times
+- Provides clear progress feedback
+- Automatically collects logs on failure
+- Maximum wait: 3 minutes (sufficient for Jenkins initialization)
+
+**Files Updated:**
+- `foundational-ci.yml`: Initial setup, persistence verification
+- `advanced-ci.yml`: Initial setup, persistence verification, service restart
+- `complex-ci.yml`: Initial setup, endpoint test, data persistence, script testing
+
 ## Requirements Fulfillment
 
 ### ✅ Foundational Requirements
