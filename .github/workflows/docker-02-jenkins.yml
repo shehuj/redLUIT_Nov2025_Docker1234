@@ -24,7 +24,7 @@ permissions:
 
 env:
   IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/jenkins-custom
-  DOCKERHUB_REPO: redluit/jenkins-custom
+  DOCKERHUB_REPO: ${{ secrets.DOCKER_USERNAME }}/jenkins-custom
 
 jobs:
   build_and_scan:
@@ -122,6 +122,14 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Verify Docker Hub repository exists
+        run: |
+          echo "ℹ️ Pushing to: ${{ env.DOCKERHUB_REPO }}"
+          echo "⚠️ Make sure the repository exists on Docker Hub first!"
+          echo "   Create it at: https://hub.docker.com/repository/create"
+          echo "   Repository name: jenkins-custom"
+          echo "   Visibility: Public or Private"
 
       - name: Build and Push Production Jenkins to Docker Hub
         id: build-push
