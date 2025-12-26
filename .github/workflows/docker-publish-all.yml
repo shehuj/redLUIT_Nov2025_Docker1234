@@ -4,15 +4,18 @@ name: Publish All Docker Images to Docker Hub
 # TRIGGERS - Tests on dev, Publish on main
 # ═══════════════════════════════════════════════════════════════
 on:
-  # Tests on dev branch (no publishing)
+  # Build & test on dev, Build & publish on main
   push:
     branches:
       - dev
+      - main
     paths:
       - 'complex/**'
       - 'docker01/**'
       - 'docker02/**'
       - '.github/workflows/docker-publish-all.yml'
+    tags:
+      - 'v*.*.*'
 
   # Tests on PRs to dev (no publishing)
   pull_request:
@@ -23,18 +26,6 @@ on:
       - 'docker01/**'
       - 'docker02/**'
       - '.github/workflows/docker-publish-all.yml'
-
-  # Validation and publishing on main (from merge)
-  push:
-    branches:
-      - main
-    paths:
-      - 'complex/**'
-      - 'docker01/**'
-      - 'docker02/**'
-      - '.github/workflows/docker-publish-all.yml'
-    tags:
-      - 'v*.*.*'
 
   workflow_dispatch:
     inputs:
