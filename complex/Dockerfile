@@ -56,7 +56,7 @@ COPY --chown=jenkins:jenkins jenkins.yaml /var/jenkins_home/casc_jenkins.yaml
 
 # Set environment variables
 ENV JENKINS_HOME=/var/jenkins_home
-ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false -Djava.awt.headless=true -Dorg.apache.commons.jelly.tags.fmt.timeZone=America/New_York"
+ENV JAVA_OPTS="-Djava.awt.headless=true -Dorg.apache.commons.jelly.tags.fmt.timeZone=America/New_York"
 ENV CASC_JENKINS_CONFIG=/var/jenkins_home/casc_jenkins.yaml
 
 # Create necessary directories
