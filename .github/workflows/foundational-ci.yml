@@ -1,18 +1,19 @@
 name: Foundational Level - Jenkins CLI Deployment CI
 
 on:
+  # Test only - runs on dev branch and PRs
   push:
     branches:
-      - main
       - dev
     paths:
       - 'foundational/**'
       - '.github/workflows/foundational-ci.yml'
   pull_request:
     branches:
-      - main
+      - dev
     paths:
       - 'foundational/**'
+      - '.github/workflows/foundational-ci.yml'
   workflow_dispatch:
 
 jobs:

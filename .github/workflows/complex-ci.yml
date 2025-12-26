@@ -1,18 +1,19 @@
 name: Complex Level - Custom Docker Image CI
 
 on:
+  # Test only - runs on dev branch and PRs
   push:
     branches:
-      - main
-      - develop
+      - dev
     paths:
       - 'complex/**'
       - '.github/workflows/complex-ci.yml'
   pull_request:
     branches:
-      - main
+      - dev
     paths:
       - 'complex/**'
+      - '.github/workflows/complex-ci.yml'
   workflow_dispatch:
 
 env:
