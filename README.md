@@ -5,6 +5,7 @@ Complete Jenkins deployment guide demonstrating three levels of Docker expertise
 [![Foundational CI](https://github.com/redluit/redLUIT_Nov2025_Docker1234/actions/workflows/foundational-ci.yml/badge.svg)](https://github.com/redluit/redLUIT_Nov2025_Docker1234/actions/workflows/foundational-ci.yml)
 [![Advanced CI](https://github.com/redluit/redLUIT_Nov2025_Docker1234/actions/workflows/advanced-ci.yml/badge.svg)](https://github.com/redluit/redLUIT_Nov2025_Docker1234/actions/workflows/advanced-ci.yml)
 [![Complex CI](https://github.com/redluit/redLUIT_Nov2025_Docker1234/actions/workflows/complex-ci.yml/badge.svg)](https://github.com/redluit/redLUIT_Nov2025_Docker1234/actions/workflows/complex-ci.yml)
+[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-Published-blue)](https://hub.docker.com/u/redluit)
 
 ## 📋 Overview
 
@@ -81,6 +82,46 @@ chmod +x *.sh
 ```
 
 [📖 View Complex README](./complex/README.md)
+
+#### Option 4: Use Pre-built Image from Docker Hub 🆕
+
+**Pull and run the custom Jenkins image directly:**
+
+```bash
+docker pull redluit/jenkins-custom:latest
+
+docker run -d \
+  --name jenkins \
+  -p 8080:8080 \
+  -p 50000:50000 \
+  -v jenkins_data:/var/jenkins_home \
+  redluit/jenkins-custom:latest
+```
+
+**Benefits:**
+- ✅ No build time required
+- ✅ Pre-tested and validated
+- ✅ Automatically published via CI/CD
+- ✅ Includes all DevOps tools (Docker, kubectl, Terraform, Ansible)
+
+[📖 View Docker Hub Publishing Guide](./docs/DOCKER_HUB_PUBLISHING.md)
+
+## 🐳 Docker Hub Published Images
+
+All custom images are automatically published to Docker Hub:
+
+| Image | Repository | Description |
+|-------|------------|-------------|
+| **Jenkins Custom** | [`redluit/jenkins-custom`](https://hub.docker.com/r/redluit/jenkins-custom) | Custom Jenkins with DevOps tools |
+| **Docker01** | [`redluit/nov2025-docker01`](https://hub.docker.com/r/redluit/nov2025-docker01) | Docker01 project image |
+| **Docker02** | [`redluit/nov2025-docker02`](https://hub.docker.com/r/redluit/nov2025-docker02) | Docker02 project image |
+
+**Quick Pull Commands:**
+```bash
+docker pull redluit/jenkins-custom:latest
+docker pull redluit/nov2025-docker01:latest
+docker pull redluit/nov2025-docker02:latest
+```
 
 ## 📁 Repository Structure
 
