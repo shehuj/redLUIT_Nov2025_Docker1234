@@ -208,6 +208,43 @@ curl -f http://localhost:8080/login || {
 - `advanced-ci.yml`: Initial setup, persistence verification, service restart
 - `complex-ci.yml`: Initial setup, endpoint test, data persistence, script testing
 
+### Fixed docker-compose.yml Configuration Issues
+
+**Problem**: Advanced level workflow failing with 404 errors even after wait loop improvements
+
+**Root Cause**: Misconfiguration in `advanced/docker-compose.yml`:
+- `JENKINS_OPTS=--prefix=/jenkins` made Jenkins run at `/jenkins/login` instead of `/login`
+- All curl health checks were targeting wrong URL
+- Container running as root (security concern)
+- Unnecessary docker.sock mount (not needed for this level)
+
+**Solution**: Cleaned up docker-compose.yml configuration
+```yaml
+# Before (problematic)
+user: root
+volumes:
+  - jenkins_data_advanced:/var/jenkins_home
+  - /var/run/docker.sock:/var/run/docker.sock
+environment:
+  - JENKINS_OPTS=--prefix=/jenkins
+  - JAVA_OPTS=-Djava.awt.headless=true
+
+# After (fixed)
+volumes:
+  - jenkins_data_advanced:/var/jenkins_home
+environment:
+  - JAVA_OPTS=-Djava.awt.headless=true
+```
+
+**Benefits:**
+- Jenkins accessible at standard URL (http://localhost:8080)
+- Runs as jenkins user (better security)
+- Simpler configuration (no unnecessary mounts)
+- Health checks and CI/CD tests now work
+
+**Files Modified:**
+- `advanced/docker-compose.yml`
+
 ## Requirements Fulfillment
 
 ### ✅ Foundational Requirements

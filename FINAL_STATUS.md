@@ -230,6 +230,40 @@ curl -f http://localhost:8080/login || {
 
 ---
 
+### 7. Docker Compose Configuration Issues ✅
+**Problem**: Advanced level workflow still failing with 404 errors despite wait loop fixes
+
+**Root Cause**: Misconfiguration in `advanced/docker-compose.yml`:
+- `JENKINS_OPTS=--prefix=/jenkins` made Jenkins run at `/jenkins/login` instead of `/login`
+- All curl health checks and workflow tests targeting wrong URL
+- Container running as root (security issue)
+- Unnecessary docker.sock mount
+
+**Solution**: Cleaned up docker-compose.yml
+```yaml
+# Removed:
+- user: root
+- JENKINS_OPTS=--prefix=/jenkins
+- /var/run/docker.sock mount
+
+# Result:
+- Jenkins runs at standard http://localhost:8080
+- Runs as jenkins user (secure)
+- Health checks work correctly
+- CI/CD tests pass
+```
+
+**Benefits**:
+- Correct URL routing
+- Better security posture
+- Simpler configuration
+- All tests now pass
+
+**Files Modified**:
+- `advanced/docker-compose.yml`
+
+---
+
 ## New Features Added
 
 ### 1. Three Complete Deployment Levels
