@@ -1,18 +1,19 @@
 name: Advanced Level - Docker Compose CI
 
 on:
+  # Test only - runs on dev branch and PRs
   push:
     branches:
-      - main
       - dev
     paths:
       - 'advanced/**'
       - '.github/workflows/advanced-ci.yml'
   pull_request:
     branches:
-      - main
+      - dev
     paths:
       - 'advanced/**'
+      - '.github/workflows/advanced-ci.yml'
   workflow_dispatch:
 
 jobs:

@@ -1,26 +1,30 @@
-name: Jenkins Image - Build, Scan, Push
+name: Production Jenkins - Build, Scan & Publish to Docker Hub
 
-## Trigger on push to main, PRs to main, or manual runs
+# Builds production-grade Jenkins from complex/ and publishes to Docker Hub
+# Only runs on merge to main (not on dev/PR)
 on:
   push:
     branches: ["main"]
     paths:
-      - 'docker02/**'
-      - '.github/workflows/docker-02-jenkins.yml'
-  pull_request:
-    branches: ["dev"]
-    paths:
-      - 'docker02/**'
+      - 'complex/**'
       - '.github/workflows/docker-02-jenkins.yml'
   workflow_dispatch:
+    inputs:
+      tag_suffix:
+        description: 'Optional tag suffix (e.g., -rc1, -beta)'
+        required: false
+        type: string
 
 permissions:
   contents: read
   packages: write
-  security-events: write   # Required to upload SARIF to GitHub Security tab
+  security-events: write
+  attestations: write
+  id-token: write
 
 env:
   IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/jenkins-custom
+  DOCKERHUB_REPO: redluit/jenkins-custom
 
 jobs:
   build_and_scan:
@@ -43,13 +47,13 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 🛠 4) Build your custom image
+      # 🛠 4) Build production Jenkins image from complex/
       - name: Build Docker image
         run: |
           TAG=${{ github.sha }}
           docker build \
             -t ${{ env.IMAGE_NAME }}:$TAG \
-            -f docker02/Dockerfile docker02/
+            -f complex/Dockerfile complex/
 
       # 🧪 5) Optional – Run tests (if you have any)
       - name: Run tests (optional)
@@ -119,13 +123,49 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and Push Docker image
+      - name: Build and Push Production Jenkins to Docker Hub
+        id: build-push
         uses: docker/build-push-action@v6
         with:
-          context: docker02
-          file: docker02/Dockerfile
+          context: complex
+          file: complex/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ env.IMAGE_NAME }}:${{ github.sha }}
-            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.DOCKERHUB_REPO }}:${{ github.sha }}
+            ${{ env.DOCKERHUB_REPO }}:latest
+            ${{ env.DOCKERHUB_REPO }}:main
+            ${{ github.event.inputs.tag_suffix && format('{0}:{1}', env.DOCKERHUB_REPO, github.event.inputs.tag_suffix) || '' }}
+          labels: |
+            org.opencontainers.image.title=Production Jenkins Custom
+            org.opencontainers.image.description=Production-grade Jenkins with DevOps tools
+            org.opencontainers.image.vendor=redLUIT
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Generate build attestation
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ env.DOCKERHUB_REPO }}
+          subject-digest: ${{ steps.build-push.outputs.digest }}
+          push-to-registry: true
+
+      - name: Success summary
+        run: |
+          echo "## ✅ Production Jenkins Published to Docker Hub" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Repository:** \`${{ env.DOCKERHUB_REPO }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Digest:** \`${{ steps.build-push.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Pull Commands:**" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "# Latest version" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.DOCKERHUB_REPO }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Specific commit" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.DOCKERHUB_REPO }}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**View on Docker Hub:** https://hub.docker.com/r/${{ env.DOCKERHUB_REPO }}" >> $GITHUB_STEP_SUMMARY
