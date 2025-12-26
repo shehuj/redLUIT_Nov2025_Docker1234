@@ -4,15 +4,12 @@ services:
   jenkins:
     image: jenkins/jenkins:lts
     container_name: jenkins_advanced
-    user: root
     ports:
       - "8080:8080"      # Jenkins UI
       - "50000:50000"    # Agent port
     volumes:
       - jenkins_data_advanced:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - JENKINS_OPTS=--prefix=/jenkins
       - JAVA_OPTS=-Djava.awt.headless=true
     restart: unless-stopped
     networks:

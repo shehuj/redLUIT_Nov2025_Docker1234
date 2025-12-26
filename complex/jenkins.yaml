@@ -1,94 +1,34 @@
+# Minimal Jenkins Configuration as Code (CasC)
+# This is a basic configuration that won't crash Jenkins
+# Add more configuration via Jenkins UI after deployment
+
 jenkins:
   systemMessage: "Jenkins configured using Configuration as Code (CasC) - redLUIT Project"
   numExecutors: 2
   mode: NORMAL
-  scmCheckoutRetryCount: 3
 
-  securityRealm:
-    local:
-      allowsSignup: false
-      users:
-        - id: "admin"
-          password: "admin123"
-          name: "Admin User"
-          description: "Default admin user"
+  # Disable setup wizard since we're using CasC
+  disableRememberMe: false
 
-  authorizationStrategy:
-    loggedInUsersCanDoAnything:
-      allowAnonymousRead: false
+  # Security realm - allow initial setup wizard to configure
+  # Comment out to use setup wizard instead
+  # securityRealm:
+  #   local:
+  #     allowsSignup: false
 
-  remotingSecurity:
-    enabled: true
-
-  crumbIssuer:
-    standard:
-      excludeClientIPFromCrumb: false
+  # Authorization - allow initial setup wizard to configure
+  # authorizationStrategy:
+  #   loggedInUsersCanDoAnything:
+  #     allowAnonymousRead: false
 
 unclassified:
   location:
     url: "http://localhost:8080/"
-    adminAddress: "admin@redluit.local"
+    adminAddress: "jenkins@localhost"
 
-  timestamper:
-    allPipelines: true
-    elapsedTimeFormat: "'<b>'HH:mm:ss.S'</b> '"
-    systemTimeFormat: "'<b>'HH:mm:ss'</b> '"
-
-  globalLibraries:
-    libraries:
-      - name: "shared-pipeline-library"
-        defaultVersion: "main"
-        implicit: false
-        allowVersionOverride: true
-        retriever:
-          modernSCM:
-            scm:
-              git:
-                remote: "https://github.com/redluit/shared-pipeline-library.git"
-
+# Tool configurations - only include tools that are actually installed
 tool:
   git:
     installations:
       - name: "Default"
         home: "git"
-
-  maven:
-    installations:
-      - name: "Maven 3.9"
-        properties:
-          - installSource:
-              installers:
-                - maven:
-                    id: "3.9.6"
-
-  jdk:
-    installations:
-      - name: "JDK 11"
-        properties:
-          - installSource:
-              installers:
-                - adoptOpenJdkInstaller:
-                    id: "jdk-11.0.12+7"
-
-jobs:
-  - script: >
-      pipelineJob('sample-pipeline') {
-        description('Sample pipeline job created via CasC')
-        definition {
-          cps {
-            script('''
-              pipeline {
-                agent any
-                stages {
-                  stage('Hello') {
-                    steps {
-                      echo 'Hello from Jenkins CasC!'
-                    }
-                  }
-                }
-              }
-            ''')
-            sandbox(true)
-          }
-        }
-      }

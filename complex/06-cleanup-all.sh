@@ -58,29 +58,54 @@ fi
 echo ""
 
 # Step 4: Verify cleanup
-echo "Step 4: Verifying cleanup..."
-echo ""
-echo "Remaining Jenkins resources:"
-echo "----------------------------------------"
-echo "Containers:"
-docker ps -a | grep jenkins_complex || echo "  ✓ None found"
-echo ""
-echo "Volumes:"
-docker volume ls | grep jenkins_data_complex || echo "  ✓ None found"
-echo ""
-echo "Images:"
-docker images | grep jenkins-custom-complex || echo "  ✓ None found"
-echo "----------------------------------------"
+echo "Step 4: Verifying & cleaning up leftover Jenkins resources..."
 echo ""
 
-# Optional: Prune dangling images
-read -p "Remove dangling images? (y/N): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo "Removing dangling images..."
-    docker image prune -f
-    echo "✓ Dangling images removed"
+echo "----------------------------------------"
+echo "Checking for leftover Jenkins containers..."
+
+# Remove containers matching pattern (if any)
+containers=$(docker ps -a --filter "name=jenkins_complex" -q)
+if [ -n "$containers" ]; then
+  echo "Removing containers:"
+  docker ps -a --filter "name=jenkins_complex"
+  docker rm -f $containers
+else
+  echo "  ✓ No Jenkins containers found"
 fi
+
+echo ""
+echo "Checking for leftover Jenkins volumes..."
+
+# Remove volumes matching pattern (if any)
+volumes=$(docker volume ls --format "{{.Name}}" | grep jenkins_data_complex || true)
+if [ -n "$volumes" ]; then
+  echo "Removing volumes:"
+  echo "$volumes"
+  docker volume rm $volumes
+else
+  echo "  ✓ No Jenkins volumes found"
+fi
+
+echo ""
+echo "Checking for leftover Jenkins images..."
+
+# Remove images matching pattern (if any)
+images=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep jenkins-custom-complex || true)
+if [ -n "$images" ]; then
+  echo "Removing images:"
+  echo "$images"
+  docker rmi -f $images
+else
+  echo "  ✓ No Jenkins images found"
+fi
+
+echo "----------------------------------------"
+echo ""
+echo "Cleanup complete!"
+
+# Always succeed
+exit 0
 
 echo ""
 echo "========================================="

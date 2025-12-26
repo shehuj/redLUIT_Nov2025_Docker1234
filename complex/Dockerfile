@@ -11,12 +11,11 @@ LABEL version="1.0"
 # Switch to root user for system package installation
 USER root
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install system dependencies with best practices
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     vim \
     curl \
-    wget \
     unzip \
     python3 \
     python3-pip \
@@ -33,16 +32,22 @@ RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/s
     && chmod +x kubectl \
     && mv kubectl /usr/local/bin/
 
-# Install Terraform
-RUN wget -q https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip \
-    && unzip terraform_1.6.6_linux_amd64.zip \
+# Install Terraform using curl
+RUN curl -fsSL https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip -o terraform.zip \
+    && unzip terraform.zip \
     && mv terraform /usr/local/bin/ \
-    && rm terraform_1.6.6_linux_amd64.zip
+    && rm terraform.zip
 
-# Install Ansible
-RUN pip3 install --no-cache-dir ansible boto3 botocore
+# Install Python packages with flexible version constraints
+# Using >= to allow compatible updates while maintaining minimum versions
+# --break-system-packages is needed for PEP 668 compliance in containerized environments
+RUN pip3 install --no-cache-dir --break-system-packages \
+    'ansible>=9.0.0' \
+    'boto3>=1.34.0' \
+    'botocore>=1.34.0'
 
-# Copy plugins list and install Jenkins plugins
+# Copy plugins list and install essential Jenkins plugins
+# Using minimal plugin set for reliability - add more plugins via Jenkins UI after deployment
 COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
 RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
 
@@ -51,7 +56,7 @@ COPY --chown=jenkins:jenkins jenkins.yaml /var/jenkins_home/casc_jenkins.yaml
 
 # Set environment variables
 ENV JENKINS_HOME=/var/jenkins_home
-ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false -Djava.awt.headless=true -Dorg.apache.commons.jelly.tags.fmt.timeZone=America/New_York"
+ENV JAVA_OPTS="-Djava.awt.headless=true -Dorg.apache.commons.jelly.tags.fmt.timeZone=America/New_York"
 ENV CASC_JENKINS_CONFIG=/var/jenkins_home/casc_jenkins.yaml
 
 # Create necessary directories
