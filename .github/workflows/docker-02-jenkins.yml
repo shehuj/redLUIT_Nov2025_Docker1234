@@ -8,6 +8,9 @@ on:
     paths:
       - 'complex/**'
       - '.github/workflows/docker-02-jenkins.yml'
+      - 'foundational/docker02/**'
+      - 'advanced/docker02/**'
+      - 'complex/dockero2/**'
   workflow_dispatch:
     inputs:
       tag_suffix:

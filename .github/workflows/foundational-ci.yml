@@ -12,7 +12,8 @@ on:
     branches:
       - dev
     paths:
-      - 'foundational/**'
+      - 'foundational/docker01/**'
+      - 'foundational/docker02/**'
       - '.github/workflows/foundational-ci.yml'
   workflow_dispatch:
 
@@ -34,14 +35,17 @@ jobs:
           docker --version
           docker info
 
-      - name: Make scripts executable
+      - name: Make scripts executable docker01
         working-directory: foundational
-        run: chmod +x *.sh
+        run: |
+          chmod +x docker01/*.sh
+          chmod +x docker02/*.sh
 
       - name: Test Script 1 - Setup Jenkins
         working-directory: foundational
         run: |
           echo "Running setup script..."
+          cd docker01 
           ./01-setup-jenkins.sh
 
           echo "Waiting for Jenkins to start..."
@@ -72,7 +76,7 @@ jobs:
           }
 
       - name: Test Script 2 - Verify Persistence
-        working-directory: foundational
+        working-directory: foundational/docker01
         run: |
           echo "Testing data persistence..."
           # This will stop the old container and start a new one
@@ -113,7 +117,7 @@ jobs:
 
       - name: Test Script 3 - Cleanup
         if: always()
-        working-directory: foundational
+        working-directory: foundational/docker01
         run: |
           echo "Running cleanup..."
           ./03-cleanup.sh

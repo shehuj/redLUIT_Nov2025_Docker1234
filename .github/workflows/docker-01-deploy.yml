@@ -11,6 +11,9 @@ on:
     paths:
       - 'docker01/**'
       - '.github/workflows/docker-01-deploy.yml'
+      - 'advanced/docker01/**'
+      - 'complex/docker01/**'
+      - foundational/docker01/**'
     types:
       - opened
       - synchronize
