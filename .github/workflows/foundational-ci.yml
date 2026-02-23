@@ -36,7 +36,7 @@ jobs:
 
       - name: Make scripts executable
         working-directory: foundational
-        run: chmod +x *.sh
+        run: chmod +x docker01/*.sh && chmod +x docker02/*.sh
 
       - name: Test Script 1 - Setup Jenkins
         working-directory: foundational
@@ -76,7 +76,7 @@ jobs:
         run: |
           echo "Testing data persistence..."
           # This will stop the old container and start a new one
-          echo "yes" | ./02-verify-persistence.sh || true
+          echo "yes" | cd docker01 && ./02-verify-persistence.sh || true
 
           echo "Waiting for new container to start..."
           sleep 30
