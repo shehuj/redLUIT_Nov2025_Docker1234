@@ -77,7 +77,7 @@ jobs:
       - name: Run foundational tests
         working-directory: foundational
         run: |
-          chmod +x *.sh
+          chmod +x foundational/docker01/*.sh && chmod +x foundational/docker02/*.sh
           ./01-setup-jenkins.sh
           sleep 60
           curl -f http://localhost:8080/login
