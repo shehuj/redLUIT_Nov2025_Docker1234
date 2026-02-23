@@ -80,7 +80,7 @@ jobs:
         run: |
           echo "Testing data persistence..."
           # This will stop the old container and start a new one
-          echo "yes" | cd docker01 && ./02-verify-persistence.sh || true
+          echo "yes" | ./02-verify-persistence.sh || true
 
           echo "Waiting for new container to start..."
           sleep 30
