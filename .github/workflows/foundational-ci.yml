@@ -76,7 +76,7 @@ jobs:
           }
 
       - name: Test Script 2 - Verify Persistence
-        working-directory: foundational
+        working-directory: foundational/docker01
         run: |
           echo "Testing data persistence..."
           # This will stop the old container and start a new one
@@ -117,10 +117,9 @@ jobs:
 
       - name: Test Script 3 - Cleanup
         if: always()
-        working-directory: foundational
+        working-directory: foundational/docker01
         run: |
           echo "Running cleanup..."
-          cd docker01 
           ./03-cleanup.sh
 
           # Verify everything is cleaned up
