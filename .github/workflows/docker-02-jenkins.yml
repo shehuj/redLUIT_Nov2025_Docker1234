@@ -159,7 +159,7 @@ jobs:
       - name: Generate build attestation
         uses: actions/attest-build-provenance@v1
         with:
-          subject-name: ${{ env.DOCKERHUB_REPO }}
+          subject-name: docker.io/${{ env.DOCKERHUB_REPO }}
           subject-digest: ${{ steps.build-push.outputs.digest }}
           push-to-registry: true
 
