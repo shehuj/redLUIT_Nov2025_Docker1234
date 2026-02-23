@@ -42,7 +42,7 @@ jobs:
         working-directory: foundational
         run: |
           echo "Running setup script..."
-          ./01-setup-jenkins.sh
+          cd docker01 && ./01-setup-jenkins.sh
 
           echo "Waiting for Jenkins to start..."
           sleep 30
@@ -116,7 +116,7 @@ jobs:
         working-directory: foundational
         run: |
           echo "Running cleanup..."
-          ./03-cleanup.sh
+          cd docker01 && ./03-cleanup.sh
 
           # Verify everything is cleaned up
           ! docker ps -a | grep jenkins_foundational
