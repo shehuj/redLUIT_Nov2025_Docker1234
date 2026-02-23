@@ -12,7 +12,8 @@ on:
     branches:
       - dev
     paths:
-      - 'foundational/**'
+      - 'foundational/docker01/**'
+      - 'foundational/docker02/**'
       - '.github/workflows/foundational-ci.yml'
   workflow_dispatch:
 
@@ -34,9 +35,11 @@ jobs:
           docker --version
           docker info
 
-      - name: Make scripts executable
+      - name: Make scripts executable docker01
         working-directory: foundational
-        run: chmod +x docker01/*.sh && chmod +x docker02/*.sh
+        run: |
+          chmod +x docker01/*.sh
+          chmod +x docker02/*.sh
 
       - name: Test Script 1 - Setup Jenkins
         working-directory: foundational
